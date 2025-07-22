@@ -5,7 +5,8 @@ from backend.views import api_router
 from backend.controllers import telegram_scheduler  # Importa o scheduler para iniciar o agendamento
 from backend.config import CHAT_IDS
 from backend.controllers.telegram_scheduler import enviar_pergunta_para_usuario
-
+from fastapi.responses import FileResponse
+import os
 app = FastAPI()
 
 # Adiciona o middleware de CORS para permitir acesso do frontend
@@ -20,6 +21,11 @@ app.add_middleware(
 # Inclui as rotas da view (API)
 app.include_router(api_router)
 
+
+@app.get("/")
+def get_frontend():
+    return FileResponse(os.path.join(os.path.dirname(__file__), "../index.html"))
+    
 # Ao iniciar o sistema, envie a primeira pergunta para todos os usuários
 @app.on_event("startup")
 def enviar_primeira_pergunta():

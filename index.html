@@ -27,7 +27,7 @@
     </table>
     <script>
         async function carregarRespostas() {
-            const resp = await fetch('http://localhost:8000/respostas');
+            const resp = await fetch('/respostas');
             const dados = await resp.json();
             const tbody = document.getElementById('respostas-body');
             tbody.innerHTML = '';
@@ -41,4 +41,4 @@
         setInterval(carregarRespostas, 10000); // Atualiza a cada 10s
     </script>
 </body>
-</html> 
+</html>
