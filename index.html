@@ -2,43 +2,92 @@
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
-    <title>Respostas dos Usuários - Telegram Bot</title>
+    <title>Gestão de Alertas - Telegram Bot</title>
     <style>
         body { font-family: Arial, sans-serif; margin: 2em; }
         h1 { color: #2c3e50; }
-        table { border-collapse: collapse; width: 100%; }
+        table { border-collapse: collapse; width: 100%; margin-bottom: 2em; }
         th, td { border: 1px solid #ccc; padding: 8px; text-align: left; }
         th { background: #f4f4f4; }
+        .btn { padding: 8px 16px; background: #3498db; color: #fff; border: none; border-radius: 4px; cursor: pointer; }
+        .btn:hover { background: #217dbb; }
+        .form-popup { display: none; position: fixed; top: 20%; left: 50%; transform: translate(-50%, 0); background: #fff; border: 1px solid #ccc; padding: 2em; z-index: 10; box-shadow: 0 2px 8px #0002; }
+        .form-popup input, .form-popup textarea { width: 100%; margin-bottom: 1em; padding: 8px; }
+        .overlay { display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: #0005; z-index: 5; }
     </style>
 </head>
 <body>
-    <h1>Respostas dos Usuários</h1>
-    <table id="respostas-table">
+    <h1>Gestão de Alertas</h1>
+    <button class="btn" onclick="abrirFormulario()">Novo Alerta</button>
+    <div class="overlay" id="overlay" onclick="fecharFormulario()"></div>
+    <div class="form-popup" id="formAlerta">
+        <h2>Novo Alerta</h2>
+        <form onsubmit="enviarAlerta(event)">
+            <label>ID do chat do líder (Telegram):</label>
+            <input type="text" id="chat_id" required />
+            <label>Tipo do problema:</label>
+            <textarea id="problema" required></textarea>
+            <button class="btn" type="submit">Criar Alerta</button>
+            <button class="btn" type="button" onclick="fecharFormulario()">Cancelar</button>
+        </form>
+    </div>
+    <h2>Pendentes</h2>
+    <table>
         <thead>
-            <tr>
-                <th>Usuário</th>
-                <th>Pergunta</th>
-                <th>Resposta</th>
-                <th>Data/Hora</th>
-            </tr>
+            <tr><th>ID</th><th>Chat</th><th>Problema</th><th>Criado em</th></tr>
         </thead>
-        <tbody id="respostas-body">
-        </tbody>
+        <tbody id="pendentes-body"></tbody>
+    </table>
+    <h2>Escalada</h2>
+    <table>
+        <thead>
+            <tr><th>ID</th><th>Chat</th><th>Problema</th><th>Previsão</th><th>Respondido em</th></tr>
+        </thead>
+        <tbody id="escaladas-body"></tbody>
     </table>
     <script>
-        async function carregarRespostas() {
-            const resp = await fetch('/respostas');
+        function abrirFormulario() {
+            document.getElementById('formAlerta').style.display = 'block';
+            document.getElementById('overlay').style.display = 'block';
+        }
+        function fecharFormulario() {
+            document.getElementById('formAlerta').style.display = 'none';
+            document.getElementById('overlay').style.display = 'none';
+        }
+        async function enviarAlerta(e) {
+            e.preventDefault();
+            const chat_id = document.getElementById('chat_id').value;
+            const problema = document.getElementById('problema').value;
+            await fetch('/alertas', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ chat_id, problema })
+            });
+            fecharFormulario();
+            carregarAlertas();
+        }
+        async function carregarAlertas() {
+            const resp = await fetch('/alertas');
             const dados = await resp.json();
-            const tbody = document.getElementById('respostas-body');
-            tbody.innerHTML = '';
-            dados.forEach(r => {
+            const pendentes = dados.pendentes;
+            const escaladas = dados.escaladas;
+            const pendentesBody = document.getElementById('pendentes-body');
+            const escaladasBody = document.getElementById('escaladas-body');
+            pendentesBody.innerHTML = '';
+            escaladasBody.innerHTML = '';
+            pendentes.forEach(a => {
                 const tr = document.createElement('tr');
-                tr.innerHTML = `<td>${r.user_id}</td><td>${r.pergunta}</td><td>${r.resposta}</td><td>${r.timestamp}</td>`;
-                tbody.appendChild(tr);
+                tr.innerHTML = `<td>${a.id}</td><td>${a.chat_id}</td><td>${a.problema}</td><td>${a.criado_em ? new Date(a.criado_em).toLocaleString() : ''}</td>`;
+                pendentesBody.appendChild(tr);
+            });
+            escaladas.forEach(a => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `<td>${a.id}</td><td>${a.chat_id}</td><td>${a.problema}</td><td>${a.previsao}</td><td>${a.respondido_em ? new Date(a.respondido_em).toLocaleString() : ''}</td>`;
+                escaladasBody.appendChild(tr);
             });
         }
-        carregarRespostas();
-        setInterval(carregarRespostas, 10000); // Atualiza a cada 10s
+        carregarAlertas();
+        setInterval(carregarAlertas, 10000);
     </script>
 </body>
 </html>

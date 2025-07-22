@@ -6,6 +6,7 @@ from sqlalchemy.orm import declarative_base, sessionmaker
 from sqlalchemy.exc import OperationalError
 from sqlalchemy.sql import func
 from dotenv import load_dotenv
+from backend.models.alerta_model import Alerta, Base as AlertaBase
 
 load_dotenv()
 
@@ -33,6 +34,7 @@ class EstadoUsuario(Base):
 def init_db():
     try:
         Base.metadata.create_all(bind=engine)
+        AlertaBase.metadata.create_all(bind=engine)
     except OperationalError as e:
         print('Erro ao conectar ao banco:', e)
 

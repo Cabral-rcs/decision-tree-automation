@@ -7,6 +7,7 @@ from backend.config import CHAT_IDS
 from backend.controllers.telegram_scheduler import enviar_pergunta_para_usuario
 from fastapi.responses import FileResponse
 import os
+from backend.controllers.alerta_controller import router as alerta_router
 app = FastAPI()
 
 # Adiciona o middleware de CORS para permitir acesso do frontend
@@ -20,6 +21,7 @@ app.add_middleware(
 
 # Inclui as rotas da view (API)
 app.include_router(api_router)
+app.include_router(alerta_router)
 
 
 @app.get("/")
