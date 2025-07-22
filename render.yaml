@@ -1,0 +1,14 @@
+services:
+  - type: web
+    name: bot-telegram-fastapi
+    env: python
+    buildCommand: "pip install -r requirements.txt"
+    startCommand: "bash start.sh"
+    plan: free
+    envVars:
+      - key: DATABASE_URL
+        sync: false
+      - key: TELEGRAM_BOT_TOKEN
+        sync: false
+      - key: CHAT_IDS
+        sync: false

@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <title>Respostas dos Usuários - Telegram Bot</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 2em; }
+        h1 { color: #2c3e50; }
+        table { border-collapse: collapse; width: 100%; }
+        th, td { border: 1px solid #ccc; padding: 8px; text-align: left; }
+        th { background: #f4f4f4; }
+    </style>
+</head>
+<body>
+    <h1>Respostas dos Usuários</h1>
+    <table id="respostas-table">
+        <thead>
+            <tr>
+                <th>Usuário</th>
+                <th>Pergunta</th>
+                <th>Resposta</th>
+                <th>Data/Hora</th>
+            </tr>
+        </thead>
+        <tbody id="respostas-body">
+        </tbody>
+    </table>
+    <script>
+        async function carregarRespostas() {
+            const resp = await fetch('http://localhost:8000/respostas');
+            const dados = await resp.json();
+            const tbody = document.getElementById('respostas-body');
+            tbody.innerHTML = '';
+            dados.forEach(r => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `<td>${r.user_id}</td><td>${r.pergunta}</td><td>${r.resposta}</td><td>${r.timestamp}</td>`;
+                tbody.appendChild(tr);
+            });
+        }
+        carregarRespostas();
+        setInterval(carregarRespostas, 10000); // Atualiza a cada 10s
+    </script>
+</body>
+</html> 
