@@ -6,6 +6,7 @@ from backend.config import TELEGRAM_API_URL
 import requests
 from datetime import datetime, timezone, timedelta
 import pytz
+from backend.models.lider_model import Lider
 
 router = APIRouter()
 
@@ -13,10 +14,15 @@ router = APIRouter()
 def criar_alerta(alerta: dict):
     db: Session = SessionLocal()
     try:
+        # Buscar chat_id pelo nome do líder
+        lider = db.query(Lider).filter(Lider.nome_lider == alerta['nome_lider']).first()
+        if not lider:
+            raise HTTPException(status_code=404, detail='Líder não encontrado')
         novo_alerta = Alerta(
-            chat_id=alerta['chat_id'],
+            chat_id=lider.chat_id,
             problema=alerta['problema'],
-            status='pendente'
+            status='pendente',
+            nome_lider=lider.nome_lider
         )
         db.add(novo_alerta)
         db.commit()

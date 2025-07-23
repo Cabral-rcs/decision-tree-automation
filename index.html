@@ -19,55 +19,88 @@
         .bg-escalada { background: #fffbe6; }
         .bg-atrasada { background: #ffeaea; }
         .bg-encerrada { background: #eaffea; }
+        .tabs { margin-bottom: 2em; }
+        .tab-btn { padding: 8px 16px; margin-right: 8px; border: none; border-radius: 4px 4px 0 0; background: #eee; cursor: pointer; }
+        .tab-btn.active { background: #3498db; color: #fff; }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
     </style>
 </head>
 <body>
     <h1>Gestão de Alertas</h1>
-    <button class="btn" onclick="abrirFormulario()">Novo Alerta</button>
-    <div class="overlay" id="overlay" onclick="fecharFormulario()"></div>
-    <div class="form-popup" id="formAlerta">
-        <h2>Novo Alerta</h2>
-        <form onsubmit="enviarAlerta(event)">
-            <label>ID do chat do líder (Telegram):</label>
-            <input type="text" id="chat_id" required />
-            <label>Tipo do problema:</label>
-            <textarea id="problema" required></textarea>
-            <button class="btn" type="submit">Criar Alerta</button>
-            <button class="btn" type="button" onclick="fecharFormulario()">Cancelar</button>
-        </form>
+    <div class="tabs">
+        <button class="tab-btn active" onclick="abrirAba('alertas')">Alertas</button>
+        <button class="tab-btn" onclick="abrirAba('lideres')">Gerenciar Líderes</button>
     </div>
-    <h2>Aguardando Previsão</h2>
-    <table>
-        <thead>
-            <tr><th>ID</th><th>Chat</th><th>Problema</th><th>Criado em</th></tr>
-        </thead>
-        <tbody id="pendentes-body"></tbody>
-    </table>
-    <h2>Escalada</h2>
-    <table>
-        <thead>
-            <tr><th>ID</th><th>Chat</th><th>Líder</th><th>Problema</th><th>Previsão</th><th>Status</th><th>Resposta do líder</th></tr>
-        </thead>
-        <tbody id="escaladas-body"></tbody>
-    </table>
-    <h2>Atrasadas</h2>
-    <table>
-        <thead>
-            <tr><th>ID</th><th>Chat</th><th>Líder</th><th>Problema</th><th>Previsão</th><th>Status</th><th>Respondido em</th></tr>
-        </thead>
-        <tbody id="atrasadas-body"></tbody>
-    </table>
-    <h2>Encerradas</h2>
-    <table>
-        <thead>
-            <tr><th>ID</th><th>Chat</th><th>Líder</th><th>Problema</th><th>Previsão</th><th>Status</th><th>Respondido em</th><th>Voltou a operar</th></tr>
-        </thead>
-        <tbody id="encerradas-body"></tbody>
-    </table>
+    <div id="alertas" class="tab-content active">
+        <button class="btn" onclick="abrirFormulario()">Novo Alerta</button>
+        <div class="overlay" id="overlay" onclick="fecharFormulario()"></div>
+        <div class="form-popup" id="formAlerta">
+            <h2>Novo Alerta</h2>
+            <form onsubmit="enviarAlerta(event)">
+                <label>Líder:</label>
+                <select id="nome_lider" required></select>
+                <label>Tipo do problema:</label>
+                <textarea id="problema" required></textarea>
+                <button class="btn" type="submit">Criar Alerta</button>
+                <button class="btn" type="button" onclick="fecharFormulario()">Cancelar</button>
+            </form>
+        </div>
+        <h2>Aguardando Previsão</h2>
+        <table>
+            <thead>
+                <tr><th>ID</th><th>Líder</th><th>Problema</th><th>Criado em</th></tr>
+            </thead>
+            <tbody id="pendentes-body"></tbody>
+        </table>
+        <h2>Escalada</h2>
+        <table>
+            <thead>
+                <tr><th>ID</th><th>Líder</th><th>Problema</th><th>Previsão</th><th>Status</th><th>Resposta do líder</th></tr>
+            </thead>
+            <tbody id="escaladas-body"></tbody>
+        </table>
+        <h2>Atrasadas</h2>
+        <table>
+            <thead>
+                <tr><th>ID</th><th>Líder</th><th>Problema</th><th>Previsão</th><th>Status</th><th>Respondido em</th></tr>
+            </thead>
+            <tbody id="atrasadas-body"></tbody>
+        </table>
+        <h2>Encerradas</h2>
+        <table>
+            <thead>
+                <tr><th>ID</th><th>Líder</th><th>Problema</th><th>Previsão</th><th>Status</th><th>Respondido em</th><th>Voltou a operar</th></tr>
+            </thead>
+            <tbody id="encerradas-body"></tbody>
+        </table>
+    </div>
+    <div id="lideres" class="tab-content">
+        <h2>Gerenciar Líderes</h2>
+        <form onsubmit="enviarLider(event)">
+            <input type="text" id="novo_nome_lider" placeholder="Nome do líder" required />
+            <input type="text" id="novo_chat_id" placeholder="ID do chat do líder" required />
+            <button class="btn" type="submit">Adicionar Líder</button>
+        </form>
+        <table>
+            <thead>
+                <tr><th>Nome</th><th>ID do Chat</th><th>Ações</th></tr>
+            </thead>
+            <tbody id="lideres-body"></tbody>
+        </table>
+    </div>
     <script>
+        let lideres = [];
+        function abrirAba(aba) {
+            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
+            document.querySelector(`.tab-btn[onclick*="${aba}"]`).classList.add('active');
+            document.getElementById(aba).classList.add('active');
+        }
         function abrirFormulario() {
             document.getElementById('formAlerta').style.display = 'block';
             document.getElementById('overlay').style.display = 'block';
+            carregarLideresSelect();
         }
         function fecharFormulario() {
             document.getElementById('formAlerta').style.display = 'none';
@@ -75,15 +108,27 @@
         }
         async function enviarAlerta(e) {
             e.preventDefault();
-            const chat_id = document.getElementById('chat_id').value;
+            const nome_lider = document.getElementById('nome_lider').value;
             const problema = document.getElementById('problema').value;
             await fetch('/alertas', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ chat_id, problema })
+                body: JSON.stringify({ nome_lider, problema })
             });
             fecharFormulario();
             carregarAlertas();
+        }
+        async function carregarLideresSelect() {
+            const resp = await fetch('/lideres');
+            lideres = await resp.json();
+            const select = document.getElementById('nome_lider');
+            select.innerHTML = '';
+            lideres.forEach(l => {
+                const opt = document.createElement('option');
+                opt.value = l.nome_lider;
+                opt.textContent = l.nome_lider;
+                select.appendChild(opt);
+            });
         }
         async function atualizarStatus(id, status) {
             await fetch(`/alertas/${id}/status`, {
@@ -111,30 +156,62 @@
             document.getElementById('encerradas-body').innerHTML = '';
             pendentes.forEach(a => {
                 const tr = document.createElement('tr');
-                tr.innerHTML = `<td>${a.id}</td><td>${a.chat_id}</td><td>${a.problema}</td><td>${a.criado_em ? new Date(a.criado_em).toLocaleString() : ''}</td>`;
+                tr.innerHTML = `<td>${a.id}</td><td>${a.nome_lider || ''}</td><td>${a.problema}</td><td>${a.criado_em ? new Date(a.criado_em).toLocaleString() : ''}</td>`;
                 document.getElementById('pendentes-body').appendChild(tr);
             });
             escaladas.forEach(a => {
                 const tr = document.createElement('tr');
                 tr.className = 'bg-escalada';
-                tr.innerHTML = `<td>${a.id}</td><td>${a.chat_id}</td><td>${a.nome_lider || ''}</td><td>${a.problema}</td><td>${a.previsao}</td><td><span class="status-${a.status_operacao.replace(' ', '-')}">${a.status_operacao}</span> ${statusButton(a)}</td><td>${a.respondido_em ? new Date(a.respondido_em).toLocaleString() : ''}</td>`;
+                tr.innerHTML = `<td>${a.id}</td><td>${a.nome_lider || ''}</td><td>${a.problema}</td><td>${a.previsao}</td><td><span class="status-${a.status_operacao.replace(' ', '-')}">${a.status_operacao}</span> ${statusButton(a)}</td><td>${a.respondido_em ? new Date(a.respondido_em).toLocaleString() : ''}</td>`;
                 document.getElementById('escaladas-body').appendChild(tr);
             });
             atrasadas.forEach(a => {
                 const tr = document.createElement('tr');
                 tr.className = 'bg-atrasada';
-                tr.innerHTML = `<td>${a.id}</td><td>${a.chat_id}</td><td>${a.nome_lider || ''}</td><td>${a.problema}</td><td>${a.previsao}</td><td><span class="status-${a.status_operacao.replace(' ', '-')}">${a.status_operacao}</span></td><td>${a.respondido_em ? new Date(a.respondido_em).toLocaleString() : ''}</td>`;
+                tr.innerHTML = `<td>${a.id}</td><td>${a.nome_lider || ''}</td><td>${a.problema}</td><td>${a.previsao}</td><td><span class="status-${a.status_operacao.replace(' ', '-')}">${a.status_operacao}</span></td><td>${a.respondido_em ? new Date(a.respondido_em).toLocaleString() : ''}</td>`;
                 document.getElementById('atrasadas-body').appendChild(tr);
             });
             encerradas.forEach(a => {
                 const tr = document.createElement('tr');
                 tr.className = 'bg-encerrada';
-                tr.innerHTML = `<td>${a.id}</td><td>${a.chat_id}</td><td>${a.nome_lider || ''}</td><td>${a.problema}</td><td>${a.previsao}</td><td><span class="status-${a.status_operacao.replace(' ', '-')}">${a.status_operacao}</span></td><td>${a.respondido_em ? new Date(a.respondido_em).toLocaleString() : ''}</td><td>${a.horario_operando ? new Date(a.horario_operando).toLocaleString() : ''}</td>`;
+                tr.innerHTML = `<td>${a.id}</td><td>${a.nome_lider || ''}</td><td>${a.problema}</td><td>${a.previsao}</td><td><span class="status-${a.status_operacao.replace(' ', '-')}">${a.status_operacao}</span></td><td>${a.respondido_em ? new Date(a.respondido_em).toLocaleString() : ''}</td><td>${a.horario_operando ? new Date(a.horario_operando).toLocaleString() : ''}</td>`;
                 document.getElementById('encerradas-body').appendChild(tr);
             });
         }
+        async function carregarLideres() {
+            const resp = await fetch('/lideres');
+            lideres = await resp.json();
+            const tbody = document.getElementById('lideres-body');
+            tbody.innerHTML = '';
+            lideres.forEach(l => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `<td>${l.nome_lider}</td><td>${l.chat_id}</td><td><button class='btn' onclick='removerLider(${l.id})'>Remover</button></td>`;
+                tbody.appendChild(tr);
+            });
+        }
+        async function enviarLider(e) {
+            e.preventDefault();
+            const nome_lider = document.getElementById('novo_nome_lider').value;
+            const chat_id = document.getElementById('novo_chat_id').value;
+            await fetch('/lideres', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ nome_lider, chat_id })
+            });
+            document.getElementById('novo_nome_lider').value = '';
+            document.getElementById('novo_chat_id').value = '';
+            carregarLideres();
+            carregarLideresSelect();
+        }
+        async function removerLider(id) {
+            await fetch(`/lideres/${id}`, { method: 'DELETE' });
+            carregarLideres();
+            carregarLideresSelect();
+        }
         carregarAlertas();
+        carregarLideres();
         setInterval(carregarAlertas, 10000);
+        setInterval(carregarLideres, 30000);
     </script>
 </body>
 </html>

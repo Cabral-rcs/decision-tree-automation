@@ -7,6 +7,7 @@ from sqlalchemy.exc import OperationalError
 from sqlalchemy.sql import func
 from dotenv import load_dotenv
 from backend.models.alerta_model import Alerta, Base as AlertaBase, force_recreate_alerta_table
+from backend.models.lider_model import Lider, Base as LiderBase
 
 load_dotenv()
 
@@ -36,6 +37,7 @@ def init_db():
         force_recreate_alerta_table()  # Força o drop e recriação da tabela alertas
         Base.metadata.create_all(bind=engine)
         AlertaBase.metadata.create_all(bind=engine)
+        LiderBase.metadata.create_all(bind=engine)
     except OperationalError as e:
         print('Erro ao conectar ao banco:', e)
 
