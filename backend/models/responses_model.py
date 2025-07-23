@@ -6,7 +6,7 @@ from sqlalchemy.orm import declarative_base, sessionmaker
 from sqlalchemy.exc import OperationalError
 from sqlalchemy.sql import func
 from dotenv import load_dotenv
-from backend.models.alerta_model import Alerta, Base as AlertaBase
+from backend.models.alerta_model import Alerta, Base as AlertaBase, force_recreate_alerta_table
 
 load_dotenv()
 
@@ -33,6 +33,7 @@ class EstadoUsuario(Base):
 
 def init_db():
     try:
+        force_recreate_alerta_table()  # Força o drop e recriação da tabela alertas
         Base.metadata.create_all(bind=engine)
         AlertaBase.metadata.create_all(bind=engine)
     except OperationalError as e:

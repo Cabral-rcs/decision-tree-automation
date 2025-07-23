@@ -1,6 +1,9 @@
 from sqlalchemy import Column, Integer, String, DateTime, Text
 from sqlalchemy.sql import func
 from sqlalchemy.orm import declarative_base
+from sqlalchemy import create_engine
+import os
+from dotenv import load_dotenv
 
 Base = declarative_base()
 
@@ -16,4 +19,13 @@ class Alerta(Base):
     status_operacao = Column(String, default='não operando')  # 'operando' ou 'não operando'
     nome_lider = Column(String, nullable=True)
     criado_em = Column(DateTime(timezone=True), server_default=func.now())
-    respondido_em = Column(DateTime(timezone=True), nullable=True) 
+    respondido_em = Column(DateTime(timezone=True), nullable=True)
+
+# Função utilitária para forçar o drop e recriação da tabela alertas
+# Use apenas em ambiente de desenvolvimento/teste!
+def force_recreate_alerta_table():
+    load_dotenv()
+    DATABASE_URL = os.getenv('DATABASE_URL')
+    engine = create_engine(DATABASE_URL)
+    Alerta.__table__.drop(engine, checkfirst=True)
+    Base.metadata.create_all(bind=engine) 
