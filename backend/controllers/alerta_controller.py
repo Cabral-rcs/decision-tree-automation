@@ -73,20 +73,19 @@ def listar_alertas():
         atrasadas = []
         encerradas = []
         for alerta in db.query(Alerta).order_by(Alerta.criado_em.desc()).all():
-            # PENDENTES: status original pendente
             if alerta.status == 'pendente':
                 pendentes.append(alerta)
                 continue
-            # CATEGORIZAÇÃO DINÂMICA
+            # Se já foi encerrado (status operando em algum momento), sempre mostrar em encerradas
+            if alerta.horario_operando:
+                encerradas.append(alerta)
+                continue
             if alerta.previsao_datetime:
-                if alerta.status_operacao == 'operando' and alerta.previsao_datetime >= now:
-                    encerradas.append(alerta)
-                elif alerta.status_operacao == 'não operando' and alerta.previsao_datetime < now:
+                if alerta.status_operacao == 'não operando' and alerta.previsao_datetime < now:
                     atrasadas.append(alerta)
                 elif alerta.status_operacao == 'não operando' and alerta.previsao_datetime >= now:
                     escaladas.append(alerta)
             else:
-                # Se não tem previsão, mantenha em escaladas
                 escaladas.append(alerta)
         return {
             "pendentes": [
