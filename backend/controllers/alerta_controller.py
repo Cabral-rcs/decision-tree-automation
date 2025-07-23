@@ -67,29 +67,21 @@ def listar_alertas():
         atrasadas = []
         encerradas = []
         for alerta in db.query(Alerta).order_by(Alerta.criado_em.desc()).all():
-            # Atualiza categorias dinamicamente
+            # PENDENTES: status original pendente
             if alerta.status == 'pendente':
                 pendentes.append(alerta)
-            elif alerta.status in ['escalada', 'atrasada', 'encerrada']:
-                # Se previsão passou e não operando -> atrasada
-                if alerta.status in ['escalada', 'atrasada'] and alerta.status_operacao == 'não operando' and alerta.previsao_datetime and alerta.previsao_datetime < now:
-                    if alerta.status != 'atrasada':
-                        alerta.status = 'atrasada'
-                        db.commit()
-                    atrasadas.append(alerta)
-                # Se operando -> encerrada
-                elif alerta.status in ['escalada', 'encerrada'] and alerta.status_operacao == 'operando':
-                    if alerta.status != 'encerrada':
-                        alerta.status = 'encerrada'
-                        db.commit()
+                continue
+            # CATEGORIZAÇÃO DINÂMICA
+            if alerta.previsao_datetime:
+                if alerta.status_operacao == 'operando' and alerta.previsao_datetime >= now:
                     encerradas.append(alerta)
-                # Se ainda escalada e previsão não passou
-                elif alerta.status == 'escalada' and (not alerta.previsao_datetime or alerta.previsao_datetime >= now or alerta.status_operacao == 'operando'):
+                elif alerta.status_operacao == 'não operando' and alerta.previsao_datetime < now:
+                    atrasadas.append(alerta)
+                elif alerta.status_operacao == 'não operando' and alerta.previsao_datetime >= now:
                     escaladas.append(alerta)
-                elif alerta.status == 'atrasada':
-                    atrasadas.append(alerta)
-                elif alerta.status == 'encerrada':
-                    encerradas.append(alerta)
+            else:
+                # Se não tem previsão, mantenha em escaladas
+                escaladas.append(alerta)
         return {
             "pendentes": [
                 {"id": a.id, "chat_id": a.chat_id, "problema": a.problema, "criado_em": a.criado_em} for a in pendentes
