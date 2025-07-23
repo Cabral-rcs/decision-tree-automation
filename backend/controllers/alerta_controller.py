@@ -4,7 +4,8 @@ from backend.models.responses_model import SessionLocal
 from backend.models.alerta_model import Alerta
 from backend.config import TELEGRAM_API_URL
 import requests
-from datetime import datetime
+from datetime import datetime, timezone, timedelta
+import pytz
 
 router = APIRouter()
 
@@ -41,15 +42,58 @@ def criar_alerta(alerta: dict):
 def listar_alertas():
     db: Session = SessionLocal()
     try:
-        pendentes = db.query(Alerta).filter(Alerta.status == 'pendente').order_by(Alerta.criado_em.desc()).all()
-        escaladas = db.query(Alerta).filter(Alerta.status == 'escalada').order_by(Alerta.criado_em.desc()).all()
+        now = datetime.now(pytz.timezone('America/Sao_Paulo'))
+        pendentes = []
+        escaladas = []
+        atrasadas = []
+        encerradas = []
+        for alerta in db.query(Alerta).order_by(Alerta.criado_em.desc()).all():
+            if alerta.status == 'pendente':
+                pendentes.append(alerta)
+            elif alerta.status == 'escalada':
+                if alerta.status_operacao == 'não operando' and alerta.previsao_datetime and alerta.previsao_datetime < now:
+                    alerta.status = 'atrasada'
+                    db.commit()
+                    atrasadas.append(alerta)
+                elif alerta.status_operacao == 'operando' and alerta.previsao_datetime and alerta.previsao_datetime >= now:
+                    alerta.status = 'encerrada'
+                    db.commit()
+                    encerradas.append(alerta)
+                else:
+                    escaladas.append(alerta)
+            elif alerta.status == 'atrasada':
+                atrasadas.append(alerta)
+            elif alerta.status == 'encerrada':
+                encerradas.append(alerta)
         return {
             "pendentes": [
                 {"id": a.id, "chat_id": a.chat_id, "problema": a.problema, "criado_em": a.criado_em} for a in pendentes
             ],
             "escaladas": [
-                {"id": a.id, "chat_id": a.chat_id, "problema": a.problema, "previsao": a.previsao, "respondido_em": a.respondido_em} for a in escaladas
+                {"id": a.id, "chat_id": a.chat_id, "problema": a.problema, "previsao": a.previsao, "previsao_datetime": a.previsao_datetime, "respondido_em": a.respondido_em, "nome_lider": a.nome_lider, "status_operacao": a.status_operacao} for a in escaladas
+            ],
+            "atrasadas": [
+                {"id": a.id, "chat_id": a.chat_id, "problema": a.problema, "previsao": a.previsao, "previsao_datetime": a.previsao_datetime, "respondido_em": a.respondido_em, "nome_lider": a.nome_lider, "status_operacao": a.status_operacao} for a in atrasadas
+            ],
+            "encerradas": [
+                {"id": a.id, "chat_id": a.chat_id, "problema": a.problema, "previsao": a.previsao, "previsao_datetime": a.previsao_datetime, "respondido_em": a.respondido_em, "nome_lider": a.nome_lider, "status_operacao": a.status_operacao} for a in encerradas
             ]
         }
+    finally:
+        db.close()
+
+@router.put('/alertas/{alerta_id}/status')
+def atualizar_status_operacao(alerta_id: int, body: dict):
+    novo_status = body.get('status_operacao')
+    if novo_status not in ['operando', 'não operando']:
+        raise HTTPException(status_code=400, detail='Status inválido')
+    db: Session = SessionLocal()
+    try:
+        alerta = db.query(Alerta).filter(Alerta.id == alerta_id).first()
+        if not alerta:
+            raise HTTPException(status_code=404, detail='Alerta não encontrado')
+        alerta.status_operacao = novo_status
+        db.commit()
+        return {"ok": True}
     finally:
         db.close() 

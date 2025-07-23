@@ -11,6 +11,9 @@ class Alerta(Base):
     problema = Column(Text)
     mensagem_id = Column(Integer, nullable=True)
     previsao = Column(Text, nullable=True)
-    status = Column(String, default='pendente')  # 'pendente' ou 'escalada'
+    previsao_datetime = Column(DateTime(timezone=True), nullable=True)
+    status = Column(String, default='pendente')  # 'pendente', 'escalada', 'atrasada', 'encerrada'
+    status_operacao = Column(String, default='não operando')  # 'operando' ou 'não operando'
+    nome_lider = Column(String, nullable=True)
     criado_em = Column(DateTime(timezone=True), server_default=func.now())
     respondido_em = Column(DateTime(timezone=True), nullable=True) 

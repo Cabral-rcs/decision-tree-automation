@@ -14,6 +14,8 @@
         .form-popup { display: none; position: fixed; top: 20%; left: 50%; transform: translate(-50%, 0); background: #fff; border: 1px solid #ccc; padding: 2em; z-index: 10; box-shadow: 0 2px 8px #0002; }
         .form-popup input, .form-popup textarea { width: 100%; margin-bottom: 1em; padding: 8px; }
         .overlay { display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: #0005; z-index: 5; }
+        .status-operando { color: green; font-weight: bold; }
+        .status-nao-operando { color: red; font-weight: bold; }
     </style>
 </head>
 <body>
@@ -41,9 +43,23 @@
     <h2>Escalada</h2>
     <table>
         <thead>
-            <tr><th>ID</th><th>Chat</th><th>Problema</th><th>Previsão</th><th>Respondido em</th></tr>
+            <tr><th>ID</th><th>Chat</th><th>Líder</th><th>Problema</th><th>Previsão</th><th>Status</th><th>Respondido em</th><th>Ação</th></tr>
         </thead>
         <tbody id="escaladas-body"></tbody>
+    </table>
+    <h2>Atrasadas</h2>
+    <table>
+        <thead>
+            <tr><th>ID</th><th>Chat</th><th>Líder</th><th>Problema</th><th>Previsão</th><th>Status</th><th>Respondido em</th></tr>
+        </thead>
+        <tbody id="atrasadas-body"></tbody>
+    </table>
+    <h2>Encerradas</h2>
+    <table>
+        <thead>
+            <tr><th>ID</th><th>Chat</th><th>Líder</th><th>Problema</th><th>Previsão</th><th>Status</th><th>Respondido em</th></tr>
+        </thead>
+        <tbody id="encerradas-body"></tbody>
     </table>
     <script>
         function abrirFormulario() {
@@ -66,24 +82,44 @@
             fecharFormulario();
             carregarAlertas();
         }
+        async function atualizarStatus(id, status) {
+            await fetch(`/alertas/${id}/status`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ status_operacao: status })
+            });
+            carregarAlertas();
+        }
         async function carregarAlertas() {
             const resp = await fetch('/alertas');
             const dados = await resp.json();
             const pendentes = dados.pendentes;
             const escaladas = dados.escaladas;
-            const pendentesBody = document.getElementById('pendentes-body');
-            const escaladasBody = document.getElementById('escaladas-body');
-            pendentesBody.innerHTML = '';
-            escaladasBody.innerHTML = '';
+            const atrasadas = dados.atrasadas;
+            const encerradas = dados.encerradas;
+            document.getElementById('pendentes-body').innerHTML = '';
+            document.getElementById('escaladas-body').innerHTML = '';
+            document.getElementById('atrasadas-body').innerHTML = '';
+            document.getElementById('encerradas-body').innerHTML = '';
             pendentes.forEach(a => {
                 const tr = document.createElement('tr');
                 tr.innerHTML = `<td>${a.id}</td><td>${a.chat_id}</td><td>${a.problema}</td><td>${a.criado_em ? new Date(a.criado_em).toLocaleString() : ''}</td>`;
-                pendentesBody.appendChild(tr);
+                document.getElementById('pendentes-body').appendChild(tr);
             });
             escaladas.forEach(a => {
                 const tr = document.createElement('tr');
-                tr.innerHTML = `<td>${a.id}</td><td>${a.chat_id}</td><td>${a.problema}</td><td>${a.previsao}</td><td>${a.respondido_em ? new Date(a.respondido_em).toLocaleString() : ''}</td>`;
-                escaladasBody.appendChild(tr);
+                tr.innerHTML = `<td>${a.id}</td><td>${a.chat_id}</td><td>${a.nome_lider || ''}</td><td>${a.problema}</td><td>${a.previsao}</td><td><span class="status-${a.status_operacao.replace(' ', '-')}">${a.status_operacao}</span></td><td>${a.respondido_em ? new Date(a.respondido_em).toLocaleString() : ''}</td><td><button class="btn" onclick="atualizarStatus(${a.id}, '${a.status_operacao === 'operando' ? 'não operando' : 'operando'}')">${a.status_operacao === 'operando' ? 'Não operando' : 'Operando'}</button></td>`;
+                document.getElementById('escaladas-body').appendChild(tr);
+            });
+            atrasadas.forEach(a => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `<td>${a.id}</td><td>${a.chat_id}</td><td>${a.nome_lider || ''}</td><td>${a.problema}</td><td>${a.previsao}</td><td><span class="status-${a.status_operacao.replace(' ', '-')}">${a.status_operacao}</span></td><td>${a.respondido_em ? new Date(a.respondido_em).toLocaleString() : ''}</td>`;
+                document.getElementById('atrasadas-body').appendChild(tr);
+            });
+            encerradas.forEach(a => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `<td>${a.id}</td><td>${a.chat_id}</td><td>${a.nome_lider || ''}</td><td>${a.problema}</td><td>${a.previsao}</td><td><span class="status-${a.status_operacao.replace(' ', '-')}">${a.status_operacao}</span></td><td>${a.respondido_em ? new Date(a.respondido_em).toLocaleString() : ''}</td>`;
+                document.getElementById('encerradas-body').appendChild(tr);
             });
         }
         carregarAlertas();
