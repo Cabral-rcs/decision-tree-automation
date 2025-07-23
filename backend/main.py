@@ -19,8 +19,9 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Inclui as rotas da view (API)
+
 app.include_router(api_router)
+# Inclui as rotas da view (API)
 app.include_router(alerta_router)
 
 
