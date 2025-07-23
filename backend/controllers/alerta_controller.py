@@ -73,16 +73,18 @@ def listar_alertas():
             elif alerta.status in ['escalada', 'atrasada', 'encerrada']:
                 # Se previsão passou e não operando -> atrasada
                 if alerta.status in ['escalada', 'atrasada'] and alerta.status_operacao == 'não operando' and alerta.previsao_datetime and alerta.previsao_datetime < now:
-                    alerta.status = 'atrasada'
-                    db.commit()
+                    if alerta.status != 'atrasada':
+                        alerta.status = 'atrasada'
+                        db.commit()
                     atrasadas.append(alerta)
                 # Se operando -> encerrada
                 elif alerta.status in ['escalada', 'encerrada'] and alerta.status_operacao == 'operando':
-                    alerta.status = 'encerrada'
-                    db.commit()
+                    if alerta.status != 'encerrada':
+                        alerta.status = 'encerrada'
+                        db.commit()
                     encerradas.append(alerta)
-                # Se ainda escalada
-                elif alerta.status == 'escalada':
+                # Se ainda escalada e previsão não passou
+                elif alerta.status == 'escalada' and (not alerta.previsao_datetime or alerta.previsao_datetime >= now or alerta.status_operacao == 'operando'):
                     escaladas.append(alerta)
                 elif alerta.status == 'atrasada':
                     atrasadas.append(alerta)
