@@ -185,7 +185,7 @@
             tbody.innerHTML = '';
             lideres.forEach(l => {
                 const tr = document.createElement('tr');
-                tr.innerHTML = `<td>${l.nome_lider}</td><td>${l.chat_id}</td><td><button class='btn' onclick='removerLider(${l.id})'>Remover</button></td>`;
+                tr.innerHTML = `<td>${l.nome_lider}</td><td>${l.chat_id}</td><td><button class='btn' onclick='editarLider(${l.id}, "${l.nome_lider}", "${l.chat_id}")'>Editar</button> <button class='btn' onclick='removerLider(${l.id})'>Remover</button></td>`;
                 tbody.appendChild(tr);
             });
         }
@@ -207,6 +207,16 @@
             await fetch(`/lideres/${id}`, { method: 'DELETE' });
             carregarLideres();
             carregarLideresSelect();
+        }
+        function editarLider(id, nome, chat_id) {
+            const novo_chat_id = prompt(`Editar ID do chat do líder ${nome}:`, chat_id);
+            if (novo_chat_id && novo_chat_id !== chat_id) {
+                fetch(`/lideres/${id}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ chat_id: novo_chat_id })
+                }).then(() => { carregarLideres(); carregarLideresSelect(); });
+            }
         }
         carregarAlertas();
         carregarLideres();
