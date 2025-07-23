@@ -60,7 +60,7 @@
     <h2>Encerradas</h2>
     <table>
         <thead>
-            <tr><th>ID</th><th>Chat</th><th>Líder</th><th>Problema</th><th>Previsão</th><th>Status</th><th>Respondido em</th></tr>
+            <tr><th>ID</th><th>Chat</th><th>Líder</th><th>Problema</th><th>Previsão</th><th>Status</th><th>Respondido em</th><th>Horário Operando</th></tr>
         </thead>
         <tbody id="encerradas-body"></tbody>
     </table>
@@ -95,7 +95,7 @@
         }
         function statusButton(a) {
             const next = a.status_operacao === 'operando' ? 'não operando' : 'operando';
-            const label = a.status_operacao === 'operando' ? 'Desligar' : 'Ligar';
+            const label = a.status_operacao === 'operando' ? 'Não operando' : 'Operando';
             return `<button class="btn" onclick="atualizarStatus(${a.id}, '${next}')">${label}</button>`;
         }
         async function carregarAlertas() {
@@ -129,7 +129,7 @@
             encerradas.forEach(a => {
                 const tr = document.createElement('tr');
                 tr.className = 'bg-encerrada';
-                tr.innerHTML = `<td>${a.id}</td><td>${a.chat_id}</td><td>${a.nome_lider || ''}</td><td>${a.problema}</td><td>${a.previsao}</td><td><span class="status-${a.status_operacao.replace(' ', '-')}">${a.status_operacao}</span></td><td>${a.respondido_em ? new Date(a.respondido_em).toLocaleString() : ''}</td>`;
+                tr.innerHTML = `<td>${a.id}</td><td>${a.chat_id}</td><td>${a.nome_lider || ''}</td><td>${a.problema}</td><td>${a.previsao}</td><td><span class="status-${a.status_operacao.replace(' ', '-')}">${a.status_operacao}</span></td><td>${a.respondido_em ? new Date(a.respondido_em).toLocaleString() : ''}</td><td>${a.horario_operando ? new Date(a.horario_operando).toLocaleString() : ''}</td>`;
                 document.getElementById('encerradas-body').appendChild(tr);
             });
         }

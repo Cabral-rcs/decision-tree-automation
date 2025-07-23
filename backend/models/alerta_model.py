@@ -20,6 +20,7 @@ class Alerta(Base):
     nome_lider = Column(String, nullable=True)
     criado_em = Column(DateTime(timezone=True), server_default=func.now())
     respondido_em = Column(DateTime(timezone=True), nullable=True)
+    horario_operando = Column(DateTime(timezone=True), nullable=True)
 
 # Função utilitária para forçar o drop e recriação da tabela alertas
 # Use apenas em ambiente de desenvolvimento/teste!

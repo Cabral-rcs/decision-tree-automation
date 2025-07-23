@@ -22,7 +22,7 @@ def criar_alerta(alerta: dict):
         db.commit()
         db.refresh(novo_alerta)
         # Envia mensagem ao líder no Telegram
-        mensagem = f"Qual a previsão para o problema: {novo_alerta.problema}?"
+        mensagem = f"Automação de previsões\nQual a previsão para o problema: {novo_alerta.problema}?\n(Responda apenas o horário no formato HH:MM)"
         payload = {
             'chat_id': novo_alerta.chat_id,
             'text': mensagem
@@ -49,6 +49,12 @@ def atualizar_status_operacao(alerta_id: int, body: dict):
         if not alerta:
             raise HTTPException(status_code=404, detail='Alerta não encontrado')
         alerta.status_operacao = novo_status
+        # Se mudou para operando, salva o horário
+        if novo_status == 'operando':
+            from datetime import datetime
+            import pytz
+            tz_br = pytz.timezone('America/Sao_Paulo')
+            alerta.horario_operando = datetime.now(tz_br)
         # Se mudou para operando, vai para encerradas
         if novo_status == 'operando' and alerta.status == 'escalada':
             alerta.status = 'encerrada'
@@ -93,7 +99,7 @@ def listar_alertas():
                 {"id": a.id, "chat_id": a.chat_id, "problema": a.problema, "previsao": a.previsao, "previsao_datetime": a.previsao_datetime, "respondido_em": a.respondido_em, "nome_lider": a.nome_lider, "status_operacao": a.status_operacao} for a in atrasadas
             ],
             "encerradas": [
-                {"id": a.id, "chat_id": a.chat_id, "problema": a.problema, "previsao": a.previsao, "previsao_datetime": a.previsao_datetime, "respondido_em": a.respondido_em, "nome_lider": a.nome_lider, "status_operacao": a.status_operacao} for a in encerradas
+                {"id": a.id, "chat_id": a.chat_id, "problema": a.problema, "previsao": a.previsao, "previsao_datetime": a.previsao_datetime, "respondido_em": a.respondido_em, "nome_lider": a.nome_lider, "status_operacao": a.status_operacao, "horario_operando": a.horario_operando} for a in encerradas
             ]
         }
     finally:
