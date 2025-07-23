@@ -22,7 +22,7 @@ def criar_alerta(alerta: dict):
         db.commit()
         db.refresh(novo_alerta)
         # Envia mensagem ao líder no Telegram
-        mensagem = f"Automação de previsões\nQual a previsão para o problema: {novo_alerta.problema}?\n(Responda apenas o horário no formato HH:MM)"
+        mensagem = f"Qual a previsão para o problema: {novo_alerta.problema}?\n(Responda apenas o horário no formato HH:MM)"
         payload = {
             'chat_id': novo_alerta.chat_id,
             'text': mensagem
