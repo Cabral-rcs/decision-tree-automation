@@ -95,7 +95,7 @@ def listar_alertas():
                 escaladas.append(alerta)
         return {
             "pendentes": [
-                {"id": a.id, "chat_id": a.chat_id, "problema": a.problema, "criado_em": a.criado_em} for a in pendentes
+                {"id": a.id, "chat_id": a.chat_id, "problema": a.problema, "criado_em": a.criado_em, "nome_lider": a.nome_lider} for a in pendentes
             ],
             "escaladas": [
                 {"id": a.id, "chat_id": a.chat_id, "problema": a.problema, "previsao": a.previsao, "previsao_datetime": a.previsao_datetime, "respondido_em": a.respondido_em, "nome_lider": a.nome_lider, "status_operacao": a.status_operacao} for a in escaladas
