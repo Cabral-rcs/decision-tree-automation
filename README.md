@@ -2,7 +2,7 @@
 
 Este repositório contém a solução modularizada para automação de decisões baseada em alertas, com integração ao Telegram.
 
-## Estrutura do Projeto
+## Estrutura do Projeto Automação da Árvore de decisão
 
 ```
 decision-tree-automation/
