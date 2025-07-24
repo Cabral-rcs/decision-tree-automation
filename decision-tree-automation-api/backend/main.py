@@ -29,7 +29,7 @@ app.include_router(lider_router)
 
 @app.get("/")
 def get_frontend():
-    return FileResponse(os.path.join(os.path.dirname(__file__), "../index.html"))
+    return FileResponse(os.path.join(os.path.dirname(__file__), "../../decision-tree-automation-ui/index.html"))
     
 # Ao iniciar o sistema, envie a primeira pergunta para todos os usuários
 @app.on_event("startup")
