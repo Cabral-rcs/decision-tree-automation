@@ -1,1 +1,0 @@
-# Pacote models para o backend (MVC) 
