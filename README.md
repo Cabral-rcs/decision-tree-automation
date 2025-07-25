@@ -1,50 +1,188 @@
 # Decision Tree Automation
 
-Este repositório contém a solução modularizada para automação de decisões baseada em alertas, com integração ao Telegram.
+Este repositório contém uma solução modular para automação de decisões baseada em alertas, com integração ao Telegram e interface web para gestão.
 
-## Estrutura do Projeto Automação da Árvore de decisão
+---
+
+## Estrutura do Projeto
 
 ```
 decision-tree-automation/
-├─ decision-tree-automation-api/      # Backend FastAPI, banco, integrações
+├─ decision-tree-automation-api/      # Backend (API, lógica, banco, integrações)
+│  ├─ backend/
+│  │  ├─ controllers/
+│  │  ├─ models/
+│  │  ├─ views/
+│  │  ├─ main.py
+│  │  ├─ config.py
+│  │  └─ __init__.py
+│  ├─ requirements.txt
+│  ├─ render.yaml
+│  └─ start.sh
 ├─ decision-tree-automation-ui/       # Frontend (HTML/JS)
-├─ decision-tree-automation-engine/   # (opcional, lógica de automação/worker)
-├─ decision-tree-automation-infra/    # Infraestrutura, scripts, pipelines
+│  └─ index.html
+└─ README.md
 ```
 
-## Como rodar o projeto
+---
 
-### 1. decision-tree-automation-api
-- Entre na pasta `decision-tree-automation-api`
-- Instale as dependências:
-  ```
-  pip install -r requirements.txt
-  ```
-- Configure o arquivo `.env` (veja `.env.example`)
-- Execute o backend:
-  ```
-  uvicorn backend.main:app --reload
-  ```
-- O backend estará disponível em `http://localhost:8000`
+## Tecnologias Utilizadas
 
-### 2. decision-tree-automation-ui
-- Entre na pasta `decision-tree-automation-ui`
-- Abra o arquivo `index.html` no navegador
-- O frontend consome a API do backend
+### Backend
 
-### 3. decision-tree-automation-engine
-- (Opcional) Use para automações, workers, processamento assíncrono
+- **Python 3.8+**  
+  Linguagem principal para lógica de negócio, API e integrações.
 
-### 4. decision-tree-automation-infra
-- (Opcional) Scripts de infraestrutura, pipelines, deploy
+- **FastAPI**  
+  Framework web moderno e performático para construção de APIs REST.  
+  *Motivo:* Simplicidade, performance, tipagem forte e documentação automática.
 
-## Funcionalidades principais
-- Cadastro e gerenciamento de líderes (nome e ID do chat do Telegram)
-- Criação manual de alertas associando ao nome do líder
-- Envio automático de mensagem ao líder via Telegram solicitando previsão
-- Recebimento e validação da resposta do líder (horário no formato HH:MM)
-- Categorização automática dos alertas
-- Botão para alterar status do alerta (Operando/Não operando)
-- Visualização de todos os alertas e líderes no frontend
+- **Uvicorn**  
+  Servidor ASGI leve e rápido para rodar aplicações FastAPI.  
+  *Motivo:* Compatibilidade com FastAPI e alta performance.
 
-Consulte o README de cada módulo para detalhes específicos. 
+- **SQLAlchemy**  
+  ORM (Object Relational Mapper) para modelagem e manipulação do banco de dados relacional.  
+  *Motivo:* Flexibilidade, integração fácil com múltiplos bancos e abstração de queries SQL.
+
+- **psycopg2-binary**  
+  Driver para conexão com bancos PostgreSQL.  
+  *Motivo:* Confiável, performático e padrão de mercado para Python + PostgreSQL.
+
+- **python-dotenv**  
+  Carrega variáveis de ambiente de arquivos `.env`.  
+  *Motivo:* Facilita configuração segura e desacoplada do código.
+
+- **requests**  
+  Biblioteca HTTP para integração com APIs externas (ex: Telegram).  
+  *Motivo:* Simplicidade e robustez para chamadas HTTP.
+
+- **apscheduler**  
+  Agendamento de tarefas (ex: envio automático de mensagens).  
+  *Motivo:* Permite automação de fluxos recorrentes.
+
+- **pytz**  
+  Manipulação de fusos horários.  
+  *Motivo:* Necessário para tratar datas e horários corretamente no contexto brasileiro.
+
+### Frontend
+
+- **HTML5, CSS3, JavaScript (Vanilla)**  
+  Interface web leve, sem frameworks, para cadastro e visualização de alertas/líderes.  
+  *Motivo:* Simplicidade, fácil manutenção e integração direta com a API.
+
+---
+
+## Armazenamento de Dados
+
+- **Banco de Dados Relacional (PostgreSQL recomendado)**
+  - Todas as entidades (alertas, líderes, respostas, estados) são persistidas via SQLAlchemy.
+  - A string de conexão é configurada via variável de ambiente `DATABASE_URL`.
+  - O modelo de dados é inicializado automaticamente ao subir a aplicação.
+
+- **Configuração**
+  - Variáveis sensíveis (tokens, URLs, IDs) são lidas de um arquivo `.env` ou do ambiente do sistema operacional.
+
+---
+
+## Estrutura de Pastas e Arquivos
+
+### Backend (`decision-tree-automation-api/backend/`)
+
+- **main.py**  
+  Ponto de entrada da aplicação FastAPI. Inicializa o app, configura CORS, inclui rotas e serve o frontend.
+
+- **config.py**  
+  Carrega variáveis de ambiente e configurações globais (ex: tokens do Telegram, IDs de chat).
+
+- **controllers/**  
+  - `alerta_controller.py`: Gerencia criação, atualização e listagem de alertas, além de integração com o Telegram.
+  - `lider_controller.py`: CRUD de líderes (usuários responsáveis por responder alertas).
+  - `telegram_scheduler.py`: Funções para envio automático de mensagens e agendamento.
+  - `telegram_webhook.py`: Recebe e processa respostas enviadas ao bot do Telegram.
+
+- **models/**  
+  - `alerta_model.py`: Define a estrutura da tabela de alertas.
+  - `lider_model.py`: Define a estrutura da tabela de líderes.
+  - `responses_model.py`: Define respostas, estado de usuários e inicialização do banco.
+
+- **views/**  
+  - `api_router.py`: Define as rotas da API (endpoints REST).
+  - `__init__.py`: Inicializa o módulo de views.
+
+- **__init__.py**  
+  Inicializa o pacote backend.
+
+### Frontend (`decision-tree-automation-ui/`)
+
+- **index.html**  
+  Interface web para cadastro de alertas, visualização de categorias (pendentes, escaladas, atrasadas, encerradas) e gestão de líderes.  
+  Consome a API do backend diretamente via JavaScript.
+
+### Outros Arquivos
+
+- **requirements.txt**  
+  Lista todas as dependências Python do backend.
+
+- **render.yaml**  
+  Configuração para deploy automatizado na plataforma Render.
+
+- **start.sh**  
+  Script de inicialização do backend (usado em produção/deploy).
+
+---
+
+## Passo a Passo para Rodar a Aplicação
+
+### 1. Clone o repositório
+
+```sh
+git clone <url-do-repositorio>
+cd decision-tree-automation/decision-tree-automation-api
+```
+
+### 2. Instale as dependências
+
+```sh
+pip install -r requirements.txt
+```
+
+### 3. Configure as variáveis de ambiente
+
+Crie um arquivo `.env` na pasta `decision-tree-automation-api` com o seguinte formato:
+
+```
+DATABASE_URL=postgresql://usuario:senha@host:porta/banco
+TELEGRAM_BOT_TOKEN=seu_token_do_telegram
+CHAT_IDS=123456789,987654321
+```
+
+### 4. Inicie o backend
+
+```sh
+uvicorn backend.main:app --reload
+```
+
+O backend estará disponível em `http://localhost:8000`.
+
+### 5. Inicie o frontend
+
+Abra o arquivo `decision-tree-automation-ui/index.html` no navegador.
+
+---
+
+## O que cada pasta/arquivo faz
+
+- **decision-tree-automation-api/backend/main.py**: Inicializa o backend, configura rotas e serve o frontend.
+- **decision-tree-automation-api/backend/config.py**: Gerencia variáveis de ambiente e configurações globais.
+- **decision-tree-automation-api/backend/controllers/**: Lógica de negócio, integrações e endpoints principais.
+- **decision-tree-automation-api/backend/models/**: Modelos de dados e inicialização do banco.
+- **decision-tree-automation-api/backend/views/**: Roteamento e organização dos endpoints da API.
+- **decision-tree-automation-ui/index.html**: Interface web para interação com o sistema.
+- **requirements.txt**: Dependências do backend.
+- **render.yaml**: Configuração de deploy na Render.
+- **start.sh**: Script de inicialização para produção.
+
+---
+
+Se precisar de mais detalhes ou quiser incluir as funcionalidades, é só pedir! 
