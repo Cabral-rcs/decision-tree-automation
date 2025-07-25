@@ -186,3 +186,30 @@ Abra o arquivo `decision-tree-automation-ui/index.html` no navegador.
 ---
 
 Se precisar de mais detalhes ou quiser incluir as funcionalidades, é só pedir! 
+
+---
+
+## Arquivos-Chave e Funções no Fluxo Central
+
+| Arquivo/Função                                         | Papel no fluxo central                                                                 |
+|--------------------------------------------------------|---------------------------------------------------------------------------------------|
+| backend/controllers/alerta_controller.py               | Criação, atualização, listagem e categorização dos alertas; envio ao Telegram         |
+| backend/controllers/telegram_webhook.py                | Recebe e processa respostas do Telegram                                               |
+| backend/controllers/telegram_scheduler.py              | Funções auxiliares para envio de mensagens                                            |
+| backend/models/alerta_model.py                         | Estrutura dos alertas                                                                 |
+| backend/models/lider_model.py                          | Estrutura dos líderes                                                                 |
+| backend/models/responses_model.py                      | Estrutura das respostas e estado do usuário                                           |
+| backend/config.py                                      | Configuração de tokens, chat_ids, variáveis de ambiente                               |
+| backend/views/api_router.py                            | Roteamento dos endpoints REST                                                         |
+| decision-tree-automation-ui/index.html                 | Interface web para cadastro, visualização e acompanhamento dos alertas                |
+
+---
+
+## Por que essas escolhas?
+
+- **FastAPI + Uvicorn:** Modernos, rápidos, fáceis de manter e com excelente suporte a APIs REST.
+- **SQLAlchemy:** Abstrai o banco, facilita manutenção e portabilidade.
+- **PostgreSQL:** Robusto, seguro e padrão para aplicações críticas.
+- **requests:** Simples e eficiente para integrações HTTP.
+- **Telegram Bot API:** Canal oficial, seguro e documentado para automação de mensagens.
+- **HTML/JS puro:** Interface leve, sem dependências pesadas, fácil de customizar. 
