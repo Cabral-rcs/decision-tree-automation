@@ -528,9 +528,9 @@ uvicorn backend.main:app --reload
 │  ┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐ │
 │  │   Pendentes     │    │   Escaladas     │    │   Atrasadas     │    │   Encerradas    │ │
 │  │                 │    │                 │    │                 │    │                 │ │
-│  │ • Aguardando    │    │ • Previsão      │    │ • Previsão      │    │ • Resolvidas    │ │
-│  │   Previsão      │    │   Excedida      │    │   Excedida      │    │ • Finalizadas   │ │
-│  │ • Sem Resposta  │    │ • Escalação     │    │ • Sem Ação      │    │ • Concluídas    │ │
+│  │ • Aguardando    │    │ • Previsão      │    │ • Previsão      │    │ • Previsão      │ │
+│  │   Previsão      │    │   fornecida     │    │   Excedida      │    │   Não excedida  │ │
+│  │                 │    │ • Não excedida  │    │ • Não operando  │    │ • Operando      │ │
 │  └─────────────────┘    └─────────────────┘    └─────────────────┘    └─────────────────┘ │
 └─────────────────────────────────────────────────────────────────────────────────────────────┘
 ```
