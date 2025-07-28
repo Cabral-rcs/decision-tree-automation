@@ -42,6 +42,7 @@
         .btn-secondary { background: #6c757d; }
         .btn-info { background: #17a2b8; }
         .btn-danger { background: #dc3545; }
+        .btn-warning { background: #ffc107; color: #000; }
         
         /* Estilos para tabelas com muitas colunas */
         table { 
@@ -160,10 +161,20 @@
                     <p><strong>Última Execução:</strong> <span id="last-execution-text">Carregando...</span></p>
                 </div>
             </div>
+            <div class="status-card">
+                <h3>Status do Scheduler</h3>
+                <div id="scheduler-status">
+                    <p><strong>Scheduler Ativo:</strong> <span id="scheduler-running">Carregando...</span></p>
+                    <p><strong>Thread Viva:</strong> <span id="thread-alive">Carregando...</span></p>
+                    <p><strong>Intervalo Atual:</strong> <span id="current-interval">Carregando...</span></p>
+                </div>
+            </div>
             <div class="control-buttons">
                 <button class="btn btn-primary" id="toggle-btn" onclick="toggleAutoAlert()">Ativar/Desativar</button>
                 <button class="btn btn-secondary" onclick="createAlertNow()">Criar Alerta Agora</button>
                 <button class="btn btn-info" onclick="updateInterval()">Atualizar Intervalo</button>
+                <button class="btn btn-info" onclick="refreshSchedulerStatus()">Atualizar Status</button>
+                <button class="btn btn-warning" onclick="forceCreateAlert()">Forçar Criação (Debug)</button>
             </div>
             <div class="interval-control">
                 <label for="interval-input">Intervalo (minutos):</label>
@@ -401,10 +412,62 @@
                 alert('Erro ao atualizar intervalo');
             }
         }
+        async function refreshSchedulerStatus() {
+            try {
+                const resp = await fetch('/auto-alert/scheduler-status');
+                const status = await resp.json();
+                
+                document.getElementById('scheduler-running').textContent = status.scheduler_running ? 'Sim' : 'Não';
+                document.getElementById('thread-alive').textContent = status.thread_alive ? 'Sim' : 'Não';
+                document.getElementById('current-interval').textContent = `${status.current_interval_minutes} minutos`;
+                
+                console.log('Status do scheduler atualizado:', status);
+            } catch (error) {
+                console.error('Erro ao atualizar status do Scheduler:', error);
+                document.getElementById('scheduler-running').textContent = 'Erro';
+                document.getElementById('thread-alive').textContent = 'Erro';
+                document.getElementById('current-interval').textContent = 'Erro';
+            }
+        }
+        
+        async function forceCreateAlert() {
+            try {
+                const resp = await fetch('/auto-alert/force-create', { method: 'POST' });
+                const result = await resp.json();
+                
+                if (result.success) {
+                    alert('Alerta criado forçadamente! Verifique a lista de alertas.');
+                    carregarAlertas();
+                } else {
+                    alert('Erro ao forçar criação de alerta');
+                }
+            } catch (error) {
+                console.error('Erro ao forçar criação:', error);
+                alert('Erro ao forçar criação de alerta');
+            }
+        }
+        
+        async function carregarStatusScheduler() {
+            try {
+                const resp = await fetch('/auto-alert/scheduler-status');
+                const status = await resp.json();
+                
+                document.getElementById('scheduler-running').textContent = status.scheduler_running ? 'Sim' : 'Não';
+                document.getElementById('thread-alive').textContent = status.thread_alive ? 'Sim' : 'Não';
+                document.getElementById('current-interval').textContent = `${status.current_interval_minutes} minutos`;
+            } catch (error) {
+                console.error('Erro ao carregar status do scheduler:', error);
+                document.getElementById('scheduler-running').textContent = 'Erro';
+                document.getElementById('thread-alive').textContent = 'Erro';
+                document.getElementById('current-interval').textContent = 'Erro';
+            }
+        }
         carregarAlertas();
         carregarStatusAutoAlert();
+        carregarStatusScheduler();
         setInterval(carregarAlertas, 10000);
         setInterval(carregarStatusAutoAlert, 30000);
+        setInterval(carregarStatusScheduler, 30000);
         
         // Força refresh a cada 5 minutos para garantir atualização
         setInterval(() => {

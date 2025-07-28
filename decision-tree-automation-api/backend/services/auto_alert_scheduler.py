@@ -37,6 +37,13 @@ class AutoAlertScheduler:
                 self.thread.join(timeout=5)
             logger.info("Auto Alert Scheduler parado")
     
+    def restart(self):
+        """Reinicia o scheduler"""
+        logger.info("Reiniciando Auto Alert Scheduler...")
+        self.stop()
+        time.sleep(1)  # Aguarda um pouco antes de reiniciar
+        self.start()
+    
     def schedule_auto_alert(self):
         """Agenda a criação automática de alertas com intervalo padrão"""
         self.interval_minutes = 3
@@ -49,11 +56,17 @@ class AutoAlertScheduler:
     
     def _run_scheduler(self):
         """Executa o loop principal do scheduler"""
+        logger.info(f"Scheduler iniciado com intervalo de {self.interval_minutes} minutos")
+        
         while self.is_running and not self.stop_event.is_set():
             try:
+                # Executa a criação de alerta
                 self._create_auto_alert()
+                
                 # Aguarda o intervalo especificado
+                logger.debug(f"Aguardando {self.interval_minutes} minutos até próxima execução...")
                 self.stop_event.wait(timeout=self.interval_minutes * 60)
+                
             except Exception as e:
                 logger.error(f"Erro no scheduler: {str(e)}")
                 # Aguarda 1 minuto antes de tentar novamente
@@ -65,16 +78,23 @@ class AutoAlertScheduler:
         try:
             # Verifica se a criação automática está ativa
             config = db.query(AutoAlertConfig).first()
-            if not config or not config.is_active:
+            if not config:
+                # Cria configuração padrão se não existir
+                config = AutoAlertConfig(is_active=False, interval_minutes=3)
+                db.add(config)
+                db.commit()
+                db.refresh(config)
+                logger.info("Configuração padrão criada (desativada)")
+                return
+            
+            if not config.is_active:
                 logger.debug("Criação automática de alertas desativada")
                 return
             
-            # Verifica se já executou recentemente
-            if config.last_execution:
-                time_since_last = datetime.now() - config.last_execution
-                if time_since_last.total_seconds() < (config.interval_minutes * 60):
-                    logger.debug(f"Ainda não é hora de criar novo alerta. Última execução: {config.last_execution}")
-                    return
+            # Atualiza o intervalo do scheduler com o valor do banco
+            if config.interval_minutes != self.interval_minutes:
+                self.interval_minutes = config.interval_minutes
+                logger.info(f"Intervalo atualizado para {self.interval_minutes} minutos")
             
             # Garante que Rafael Cabral existe
             self._ensure_rafael_cabral_exists(db)
@@ -83,13 +103,13 @@ class AutoAlertScheduler:
             alert_data = MockDataGenerator.generate_alert_data()
             
             # Cria o alerta diretamente no banco para evitar importação circular
-            self._create_alert_directly(db, alert_data)
+            novo_alerta = self._create_alert_directly(db, alert_data)
             
             # Atualiza última execução
             config.last_execution = datetime.now()
             db.commit()
             
-            logger.info(f"Alerta automático criado com sucesso")
+            logger.info(f"Alerta automático criado com sucesso - ID: {novo_alerta.id}")
             
         except Exception as e:
             logger.error(f"Erro ao criar alerta automático: {str(e)}")
@@ -100,7 +120,7 @@ class AutoAlertScheduler:
     def _ensure_rafael_cabral_exists(self, db: Session):
         """Garante que o líder Rafael Cabral existe no sistema"""
         # Rafael Cabral é o líder fixo, não precisa verificar no banco
-        logger.info("Usando Rafael Cabral como líder fixo (Chat ID: 6435800936)")
+        logger.debug("Usando Rafael Cabral como líder fixo (Chat ID: 6435800936)")
         return {"nome_lider": "Rafael Cabral", "chat_id": "6435800936"}
     
     def _create_alert_directly(self, db: Session, alert_data: dict):
@@ -145,8 +165,14 @@ class AutoAlertScheduler:
     
     def update_interval(self, interval_minutes: int):
         """Atualiza o intervalo de criação de alertas"""
+        old_interval = self.interval_minutes
         self.interval_minutes = interval_minutes
-        logger.info(f"Intervalo de criação automática atualizado para {interval_minutes} minutos")
+        logger.info(f"Intervalo de criação automática atualizado de {old_interval} para {interval_minutes} minutos")
+        
+        # Reinicia o scheduler para aplicar o novo intervalo
+        if self.is_running:
+            logger.info("Reiniciando scheduler para aplicar novo intervalo...")
+            self.restart()
 
 # Instância global do scheduler
 auto_alert_scheduler = AutoAlertScheduler() 

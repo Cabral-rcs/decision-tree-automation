@@ -57,6 +57,22 @@ def toggle_auto_alert():
         db.commit()
         db.refresh(config)
         
+        # Atualiza o scheduler
+        from backend.services.auto_alert_scheduler import auto_alert_scheduler
+        
+        if config.is_active:
+            # Se foi ativado, reinicia o scheduler
+            if not auto_alert_scheduler.is_running:
+                auto_alert_scheduler.start()
+            else:
+                auto_alert_scheduler.restart()
+            logger.info("Scheduler de alertas automáticos ativado e reiniciado")
+        else:
+            # Se foi desativado, para o scheduler
+            if auto_alert_scheduler.is_running:
+                auto_alert_scheduler.stop()
+            logger.info("Scheduler de alertas automáticos desativado")
+        
         status = "ativada" if config.is_active else "desativada"
         logger.info(f"Criação automática de alertas {status}")
         
@@ -125,6 +141,36 @@ def create_alert_now():
     finally:
         db.close()
 
+@router.post('/auto-alert/force-create')
+def force_create_alert():
+    """Força a criação de um alerta (para debug)"""
+    from backend.services.auto_alert_scheduler import auto_alert_scheduler
+    
+    try:
+        # Chama diretamente o método de criação
+        auto_alert_scheduler._create_auto_alert()
+        
+        return {
+            "success": True,
+            "message": "Alerta criado forçadamente (debug)"
+        }
+    except Exception as e:
+        logger.error(f"Erro ao forçar criação de alerta: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Erro ao criar alerta: {str(e)}")
+
+@router.get('/auto-alert/scheduler-status')
+def get_scheduler_status():
+    """Retorna o status detalhado do scheduler"""
+    from backend.services.auto_alert_scheduler import auto_alert_scheduler
+    
+    return {
+        "scheduler_running": auto_alert_scheduler.is_running,
+        "current_interval_minutes": auto_alert_scheduler.interval_minutes,
+        "thread_alive": auto_alert_scheduler.thread.is_alive() if auto_alert_scheduler.thread else False,
+        "stop_event_set": auto_alert_scheduler.stop_event.is_set(),
+        "timestamp": datetime.now().isoformat()
+    }
+
 @router.post('/auto-alert/update-interval')
 def update_interval(interval_minutes: int):
     """Atualiza o intervalo de criação de alertas"""
@@ -147,6 +193,8 @@ def update_interval(interval_minutes: int):
         # Atualiza o scheduler com o novo intervalo
         from backend.services.auto_alert_scheduler import auto_alert_scheduler
         auto_alert_scheduler.update_interval(interval_minutes)
+        
+        logger.info(f"Intervalo atualizado para {interval_minutes} minutos e scheduler reiniciado")
         
         return {
             "interval_minutes": config.interval_minutes,

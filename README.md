@@ -301,29 +301,88 @@ decision-tree-automation-ui/
 
 ## Como Executar
 
-```bash
-# 1. Clone o repositório
-git clone <url-do-repositorio>
-cd decision-tree-automation/decision-tree-automation-api
+1. **Clone o repositório**:
+   ```bash
+   git clone <url-do-repositorio>
+   cd decision-tree-automation
+   ```
 
-# 2. Instale dependências
-pip install -r requirements.txt
+2. **Configure as variáveis de ambiente**:
+   Crie um arquivo `.env` na pasta `decision-tree-automation-api` com:
+   ```
+   DATABASE_URL=postgresql://usuario:senha@localhost:5432/nome_do_banco
+   TELEGRAM_BOT_TOKEN=seu_token_do_bot
+   CHAT_IDS=123456789,987654321
+   ```
 
-# 3. Configure variáveis de ambiente
-# Crie arquivo .env com:
-# DATABASE_URL=postgresql://usuario:senha@host:porta/banco
-# TELEGRAM_BOT_TOKEN=seu_token_do_telegram
-# CHAT_IDS=123456789,987654321
+3. **Instale as dependências**:
+   ```bash
+   cd decision-tree-automation-api
+   pip install -r requirements.txt
+   ```
 
-# 4. Execute o backend
-uvicorn backend.main:app --reload
+4. **Migre a base de dados** (IMPORTANTE):
+   ```bash
+   python migrate_database.py
+   ```
 
-# 5. Abra o frontend
-# Abra decision-tree-automation-ui/index.html no navegador
+5. **Execute o backend**:
+   ```bash
+   uvicorn backend.main:app --reload
+   ```
 
-# 6. Teste os alertas automáticos (opcional)
-python test_auto_alert.py
-```
+6. **Abra o frontend**:
+   Abra o arquivo `decision-tree-automation-ui/index.html` no navegador.
+
+7. **Teste os alertas automáticos**:
+   ```bash
+   python test_scheduler.py
+   ```
+
+## Testando o Scheduler de Alertas Automáticos
+
+### Verificação Manual
+1. Acesse a aba "Alertas Automáticos" na interface web
+2. Clique em "Ativar" para ativar a criação automática
+3. Configure o intervalo desejado (ex: 1 minuto para teste)
+4. Aguarde o tempo configurado e verifique se novos alertas aparecem
+
+### Debug e Testes
+1. **Teste do Scheduler**:
+   ```bash
+   python test_scheduler.py
+   ```
+
+2. **Endpoints de Debug**:
+   - `GET /auto-alert/status` - Status da configuração
+   - `GET /auto-alert/scheduler-status` - Status detalhado do scheduler
+   - `POST /auto-alert/force-create` - Força criação de alerta (debug)
+   - `POST /auto-alert/create-now` - Cria alerta manual
+
+3. **Logs do Sistema**:
+   - Verifique os logs do console para mensagens do scheduler
+   - Procure por mensagens como "Alerta automático criado com sucesso"
+
+### Solução de Problemas
+
+#### Scheduler não está criando alertas:
+1. Verifique se está ativo na interface web
+2. Confirme o intervalo configurado
+3. Use o botão "Forçar Criação (Debug)" para testar
+4. Verifique os logs do sistema
+5. Execute `python test_scheduler.py` para diagnóstico
+
+#### Alertas não aparecem no frontend:
+1. Use Ctrl+F5 para forçar refresh
+2. Verifique se o auto-refresh está funcionando (a cada 10s)
+3. Confirme se os alertas estão no banco de dados
+4. Verifique a categoria "Aguardando Previsão"
+
+#### Scheduler não inicia:
+1. Verifique se a configuração existe no banco
+2. Confirme se as variáveis de ambiente estão corretas
+3. Execute a migração do banco novamente
+4. Reinicie o servidor
 
 ---
 
@@ -661,7 +720,7 @@ Os alertas automáticos incluem:
 
 7. **Teste os alertas automáticos**:
    ```bash
-   python test_auto_alert.py
+   python test_scheduler.py
    ```
 
 ## Funcionalidades dos Alertas Automáticos

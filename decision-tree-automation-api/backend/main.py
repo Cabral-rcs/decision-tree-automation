@@ -347,12 +347,44 @@ def enviar_primeira_pergunta():
         # Inicializa o scheduler de alertas automáticos
         from backend.services.auto_alert_scheduler import auto_alert_scheduler
         from backend.controllers.auto_alert_controller import ensure_rafael_cabral_exists
+        from backend.models.responses_model import SessionLocal
+        from backend.models.auto_alert_config_model import AutoAlertConfig
         
         # Garante que Rafael Cabral existe
         ensure_rafael_cabral_exists()
         
-        # Inicia o scheduler
-        auto_alert_scheduler.start()
+        # Verifica e carrega configuração do banco de dados
+        db = SessionLocal()
+        try:
+            config = db.query(AutoAlertConfig).first()
+            if not config:
+                # Cria configuração padrão
+                config = AutoAlertConfig(is_active=False, interval_minutes=3)
+                db.add(config)
+                db.commit()
+                db.refresh(config)
+                logger.info("Configuração padrão de alertas automáticos criada (desativada)")
+            else:
+                logger.info(f"Configuração carregada: ativo={config.is_active}, intervalo={config.interval_minutes}min")
+            
+            # Atualiza o scheduler com a configuração do banco
+            auto_alert_scheduler.interval_minutes = config.interval_minutes
+            
+            # Inicia o scheduler se estiver ativo
+            if config.is_active:
+                auto_alert_scheduler.start()
+                logger.info(f"✅ Scheduler iniciado com intervalo de {config.interval_minutes} minutos")
+            else:
+                logger.info("✅ Scheduler não iniciado (desativado na configuração)")
+                
+        except Exception as e:
+            logger.error(f"Erro ao carregar configuração: {e}")
+            # Inicia com configuração padrão
+            auto_alert_scheduler.start()
+            logger.info("✅ Scheduler iniciado com configuração padrão")
+        finally:
+            db.close()
+        
         logger.info("✅ Sistema inicializado com sucesso")
     except Exception as e:
         logger.error(f"❌ Erro na inicialização: {e}")
