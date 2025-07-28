@@ -29,6 +29,7 @@ def criar_alerta(alerta: dict):
             chat_id=chat_id,
             problema=alerta['problema'],
             status='pendente',
+            status_operacao='não operando',  # Status inicial
             nome_lider=nome_lider,
             # Novos campos se disponíveis
             codigo=alerta.get('codigo'),
@@ -42,8 +43,8 @@ def criar_alerta(alerta: dict):
             data_operacao=datetime.fromisoformat(alerta.get('data_operacao')) if alerta.get('data_operacao') else None,
             tempo_abertura=alerta.get('tempo_abertura'),
             tipo_arvore=alerta.get('tipo_arvore'),
-            justificativa=alerta.get('justificativa'),
-            prazo=datetime.fromisoformat(alerta.get('prazo')) if alerta.get('prazo') else None
+            justificativa=None,  # Campo não preenchido automaticamente
+            prazo=None  # Campo preenchido pelo líder via Telegram
         )
         db.add(novo_alerta)
         db.commit()
@@ -51,7 +52,7 @@ def criar_alerta(alerta: dict):
         
         # Envia mensagem ao líder no Telegram
         try:
-            mensagem = f"Qual a previsão para o problema: {novo_alerta.problema}?\n(Responda apenas o horário no formato HH:MM)"
+            mensagem = f"Novo alerta criado:\n\n{novo_alerta.problema}\n\nQual a previsão para resolução?\n(Responda apenas o horário no formato HH:MM)"
             payload = {
                 'chat_id': novo_alerta.chat_id,
                 'text': mensagem
@@ -122,20 +123,27 @@ def listar_alertas():
         encerradas = []
         
         for alerta in db.query(Alerta).order_by(Alerta.criado_em.desc()).all():
-            if alerta.status == 'pendente':
+            # Aguardando Previsão: Sem prazo respondido pelo líder
+            if not alerta.prazo:
                 pendentes.append(alerta)
                 continue
-            # Se já foi encerrado (status operando em algum momento), sempre mostrar em encerradas
-            if alerta.horario_operando:
-                encerradas.append(alerta)
-                continue
-            if alerta.previsao_datetime:
-                if alerta.status_operacao == 'não operando' and alerta.previsao_datetime < now:
+            
+            # Se tem prazo, verifica as outras categorias
+            if alerta.status_operacao == 'operando':
+                # Encerradas: Prazo não excedido e status operando
+                if alerta.prazo >= now:
+                    encerradas.append(alerta)
+                else:
+                    # Atrasadas: Prazo excedido mas status operando (caso raro)
                     atrasadas.append(alerta)
-                elif alerta.status_operacao == 'não operando' and alerta.previsao_datetime >= now:
-                    escaladas.append(alerta)
             else:
-                escaladas.append(alerta)
+                # Status não operando
+                if alerta.prazo >= now:
+                    # Escaladas: Prazo respondido, atual dentro do prazo e status não operando
+                    escaladas.append(alerta)
+                else:
+                    # Atrasadas: Prazo excedido e status não operando
+                    atrasadas.append(alerta)
         
         return {
             "pendentes": [
@@ -145,7 +153,7 @@ def listar_alertas():
                     "equipamento": a.equipamento, "codigo_equipamento": a.codigo_equipamento, "tipo_operacao": a.tipo_operacao,
                     "operacao": a.operacao, "nome_operador": a.nome_operador, "data_operacao": a.data_operacao,
                     "tempo_abertura": a.tempo_abertura, "tipo_arvore": a.tipo_arvore, "justificativa": a.justificativa,
-                    "prazo": a.prazo
+                    "prazo": a.prazo, "status_operacao": a.status_operacao
                 } for a in pendentes
             ],
             "escaladas": [

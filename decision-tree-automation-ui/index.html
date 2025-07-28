@@ -6,8 +6,8 @@
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate, max-age=0">
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="Thu, 01 Jan 1970 00:00:00 GMT">
-    <meta name="version" content="2024-12-19-20-30-00">
-    <meta name="build-timestamp" content="2024-12-19T20:30:00Z">
+    <meta name="version" content="2024-12-19-21-00-00">
+    <meta name="build-timestamp" content="2024-12-19T21:00:00Z">
     <title>Gestão de Alertas - Telegram Bot</title>
     <style>
         body { font-family: Arial, sans-serif; margin: 2em; }
@@ -85,7 +85,7 @@
                         <th>ID</th><th>Código</th><th>Unidade</th><th>Frente</th><th>Equipamento</th>
                         <th>Tipo Operação</th><th>Operação</th><th>Operador</th><th>Data Operação</th>
                         <th>Tempo Abertura</th><th>Tipo Árvore</th><th>Justificativa</th><th>Prazo</th>
-                        <th>Líder</th><th>Problema</th><th>Criado em</th>
+                        <th>Líder</th><th>Problema</th><th>Status</th><th>Criado em</th>
                     </tr>
                 </thead>
                 <tbody id="pendentes-body"></tbody>
@@ -215,6 +215,7 @@
                     <td>${a.prazo ? new Date(a.prazo).toLocaleString() : '-'}</td>
                     <td>${a.nome_lider || '-'}</td>
                     <td>${a.problema}</td>
+                    <td><span class="status-${a.status_operacao.replace(' ', '-')}">${a.status_operacao}</span> ${statusButton(a)}</td>
                     <td>${a.criado_em ? new Date(a.criado_em).toLocaleString() : '-'}</td>
                 `;
                 document.getElementById('pendentes-body').appendChild(tr);
@@ -264,7 +265,7 @@
                     <td>${a.nome_lider || '-'}</td>
                     <td>${a.problema}</td>
                     <td>${a.previsao || '-'}</td>
-                    <td><span class="status-${a.status_operacao.replace(' ', '-')}">${a.status_operacao}</span></td>
+                    <td><span class="status-${a.status_operacao.replace(' ', '-')}">${a.status_operacao}</span> ${statusButton(a)}</td>
                     <td>${a.respondido_em ? new Date(a.respondido_em).toLocaleString() : '-'}</td>
                 `;
                 document.getElementById('atrasadas-body').appendChild(tr);
@@ -396,6 +397,6 @@
         console.log('🔄 Auto-refresh ativo a cada 5 minutos');
         console.log('⌨️  Use Ctrl+F5 para forçar refresh manual');
     </script>
-    <!-- Timestamp: 2024-12-19 20:30:00 - Versão simplificada sem gerenciamento de líderes -->
+    <!-- Timestamp: 2024-12-19 21:00:00 - Sistema escalado com integração Telegram -->
 </body>
 </html>

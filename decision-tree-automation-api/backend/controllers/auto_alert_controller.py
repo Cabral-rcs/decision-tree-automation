@@ -118,8 +118,8 @@ def create_alert_now():
             data_operacao=datetime.fromisoformat(alert_data.get('data_operacao')) if alert_data.get('data_operacao') else None,
             tempo_abertura=alert_data.get('tempo_abertura'),
             tipo_arvore=alert_data.get('tipo_arvore'),
-            justificativa=alert_data.get('justificativa'),
-            prazo=datetime.fromisoformat(alert_data.get('prazo')) if alert_data.get('prazo') else None
+            justificativa=None,  # Campo não preenchido automaticamente
+            prazo=None  # Campo preenchido pelo líder via Telegram
         )
         db.add(novo_alerta)
         db.commit()

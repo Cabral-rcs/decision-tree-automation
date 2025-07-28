@@ -89,9 +89,6 @@ class MockDataGenerator:
         tempo_abertura = datetime.now() - data_operacao
         tempo_abertura_str = f"{tempo_abertura.seconds // 3600}h {(tempo_abertura.seconds % 3600) // 60}min"
         
-        # Gera prazo (entre 1 e 8 horas a partir de agora)
-        prazo = datetime.now() + timedelta(hours=random.randint(1, 8))
-        
         return {
             "status": "Pendente",
             "codigo": str(codigo),  # Convertido para string
@@ -105,8 +102,8 @@ class MockDataGenerator:
             "data_operacao": data_operacao.isoformat(),  # Formato ISO para compatibilidade
             "tempo_abertura": tempo_abertura_str,
             "tipo_arvore": "Árvore de Manutenção",
-            "justificativa": problema,
-            "prazo": prazo.isoformat(),  # Formato ISO para compatibilidade
+            "justificativa": None,  # Campo não preenchido automaticamente
+            "prazo": None,  # Campo preenchido pelo líder via Telegram
             "nome_lider": "Rafael Cabral",
             "chat_id": "6435800936",
             "problema": f"[AUTO] {equipamento['nome']} - {operacao} - {problema}"  # Adicionado campo problema

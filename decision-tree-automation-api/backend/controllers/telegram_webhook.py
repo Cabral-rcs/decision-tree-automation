@@ -26,7 +26,12 @@ async def telegram_webhook(request: Request):
     resposta = message.get('text') or '[outro tipo de mensagem]'
     db = SessionLocal()
     try:
-        alerta = db.query(Alerta).filter(Alerta.chat_id == str(user_id), Alerta.status == 'pendente').order_by(Alerta.criado_em.asc()).first()
+        # Busca alerta pendente (sem prazo) para o líder
+        alerta = db.query(Alerta).filter(
+            Alerta.nome_lider == nome_lider, 
+            Alerta.prazo.is_(None)
+        ).order_by(Alerta.criado_em.asc()).first()
+        
         if alerta:
             # Validação do padrão HH:MM
             padrao = r'^(\d{2}):(\d{2})$'
@@ -39,16 +44,28 @@ async def telegram_webhook(request: Request):
                 }
                 requests.post(f'{TELEGRAM_API_URL}/sendMessage', data=payload)
                 return {"status": "erro", "msg": "Formato inválido"}
+            
             # Montar datetime da previsão para o mesmo dia da resposta
             hora, minuto = match.groups()
             previsao_dt = msg_br.replace(hour=int(hora), minute=int(minuto), second=0, microsecond=0)
+            
+            # Atualiza o alerta com a previsão e prazo
             alerta.previsao = resposta
             alerta.previsao_datetime = previsao_dt
-            alerta.status = 'escalada'
+            alerta.prazo = previsao_dt  # Campo prazo preenchido pelo líder
             alerta.respondido_em = datetime.utcnow()
             alerta.nome_lider = nome_lider
+            
             db.commit()
-            print(f'Alerta {alerta.id} atualizado com previsão: {resposta} e nome: {nome_lider}')
+            print(f'Alerta {alerta.id} atualizado com previsão: {resposta} e prazo: {previsao_dt}')
+            
+            # Confirmação para o líder
+            payload = {
+                'chat_id': user_id,
+                'text': f'Previsão registrada: {resposta}. O alerta será monitorado até este horário.'
+            }
+            requests.post(f'{TELEGRAM_API_URL}/sendMessage', data=payload)
+            
         # Armazena também como resposta geral (opcional)
         if user_id and resposta and msg_utc:
             add_response({

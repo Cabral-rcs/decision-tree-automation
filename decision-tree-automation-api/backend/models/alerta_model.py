@@ -34,8 +34,8 @@ class Alerta(Base):
     data_operacao = Column(DateTime(timezone=True), nullable=True)
     tempo_abertura = Column(String, nullable=True)
     tipo_arvore = Column(String, nullable=True)
-    justificativa = Column(Text, nullable=True)
-    prazo = Column(DateTime(timezone=True), nullable=True)
+    justificativa = Column(Text, nullable=True)  # Campo opcional, não preenchido automaticamente
+    prazo = Column(DateTime(timezone=True), nullable=True)  # Campo opcional, preenchido pelo líder via Telegram
 
 # Função utilitária para forçar o drop e recriação da tabela alertas
 # Use apenas em ambiente de desenvolvimento/teste!
