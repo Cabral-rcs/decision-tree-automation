@@ -49,15 +49,19 @@ async def telegram_webhook(request: Request):
         
         db = SessionLocal()
         try:
-            # Busca alerta pendente (sem prazo) para o líder Rafael Cabral
+            # Busca alerta pendente (sem prazo) - mais flexível
             alerta = db.query(Alerta).filter(
-                Alerta.nome_lider == 'Rafael Cabral', 
                 Alerta.prazo.is_(None)
             ).order_by(Alerta.criado_em.asc()).first()
             
             if not alerta:
-                logger.warning('Nenhum alerta pendente encontrado para Rafael Cabral')
+                logger.warning('Nenhum alerta pendente encontrado')
                 print('⚠️  Nenhum alerta pendente encontrado')
+                
+                # Verifica se há alertas no sistema
+                total_alertas = db.query(Alerta).count()
+                logger.info(f'Total de alertas no sistema: {total_alertas}')
+                print(f'📊 Total de alertas no sistema: {total_alertas}')
                 
                 # Envia mensagem informando que não há alertas pendentes
                 payload = {
@@ -93,15 +97,28 @@ async def telegram_webhook(request: Request):
             print(f'⏰ Prazo processado: {resposta} -> {previsao_dt}')
             
             # Atualiza o alerta com a previsão e prazo
+            logger.info(f'Atualizando alerta {alerta.id} com resposta: {resposta}')
+            print(f'🔄 Atualizando alerta {alerta.id} com resposta: {resposta}')
+            
             alerta.previsao = resposta
             alerta.previsao_datetime = previsao_dt
             alerta.prazo = previsao_dt  # Campo prazo preenchido pelo líder
             alerta.respondido_em = datetime.utcnow()
             alerta.nome_lider = nome_lider
             
+            # Força o commit e verifica se foi salvo
             db.commit()
-            logger.info(f'Alerta {alerta.id} atualizado com prazo: {previsao_dt}')
-            print(f'✅ Alerta {alerta.id} atualizado com prazo: {previsao_dt}')
+            db.refresh(alerta)  # Recarrega o objeto do banco
+            
+            # Verifica se a atualização foi bem-sucedida
+            alerta_atualizado = db.query(Alerta).filter(Alerta.id == alerta.id).first()
+            if alerta_atualizado and alerta_atualizado.prazo:
+                logger.info(f'✅ Alerta {alerta.id} atualizado com sucesso - Prazo: {alerta_atualizado.prazo}')
+                print(f'✅ Alerta {alerta.id} atualizado com sucesso - Prazo: {alerta_atualizado.prazo}')
+            else:
+                logger.error(f'❌ Falha ao atualizar alerta {alerta.id}')
+                print(f'❌ Falha ao atualizar alerta {alerta.id}')
+                raise Exception("Falha ao salvar prazo no banco de dados")
             
             # Confirmação para o líder
             payload = {

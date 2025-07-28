@@ -230,4 +230,37 @@ def get_ultima_atualizacao():
         logger.error(f"Erro ao buscar última atualização: {str(e)}")
         return {"error": str(e)}
     finally:
+        db.close()
+
+@router.get("/alertas/debug")
+def debug_alertas():
+    """Endpoint para debug dos alertas"""
+    db = SessionLocal()
+    try:
+        total_alertas = db.query(Alerta).count()
+        pendentes = db.query(Alerta).filter(Alerta.prazo.is_(None)).count()
+        com_prazo = db.query(Alerta).filter(Alerta.prazo.isnot(None)).count()
+        
+        # Últimos 5 alertas
+        ultimos_alertas = db.query(Alerta).order_by(Alerta.criado_em.desc()).limit(5).all()
+        
+        return {
+            "total_alertas": total_alertas,
+            "pendentes": pendentes,
+            "com_prazo": com_prazo,
+            "ultimos_alertas": [
+                {
+                    "id": a.id,
+                    "problema": a.problema[:50] + "..." if len(a.problema) > 50 else a.problema,
+                    "prazo": a.prazo.isoformat() if a.prazo else None,
+                    "respondido_em": a.respondido_em.isoformat() if a.respondido_em else None,
+                    "status_operacao": a.status_operacao,
+                    "criado_em": a.criado_em.isoformat() if a.criado_em else None
+                } for a in ultimos_alertas
+            ]
+        }
+    except Exception as e:
+        logger.error(f"Erro no debug de alertas: {str(e)}")
+        return {"error": str(e)}
+    finally:
         db.close() 

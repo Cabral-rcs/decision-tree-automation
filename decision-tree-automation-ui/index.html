@@ -173,6 +173,7 @@
                 <button class="btn btn-primary" id="toggle-btn" onclick="toggleAutoAlert()">Ativar/Desativar</button>
                 <button class="btn btn-secondary" onclick="createAlertNow()">Criar Alerta Agora</button>
                 <button class="btn btn-info" onclick="updateInterval()">Atualizar Intervalo</button>
+                <button class="btn btn-danger" onclick="debugAlertas()">Debug Alertas</button>
             </div>
             <div class="interval-control">
                 <label for="interval-input">Intervalo (minutos):</label>
@@ -362,6 +363,19 @@
             }
         }
 
+        // Função para debug dos alertas
+        async function debugAlertas() {
+            try {
+                const response = await fetch('/alertas/debug');
+                const data = await response.json();
+                console.log('🔍 Debug dos alertas:', data);
+                return data;
+            } catch (error) {
+                console.error('Erro ao fazer debug dos alertas:', error);
+                return null;
+            }
+        }
+
         // Função para carregar alertas com timestamp
         async function carregarAlertas() {
             try {
@@ -497,7 +511,7 @@
                     <td>${a.prazo ? new Date(a.prazo).toLocaleString() : '-'}</td>
                     <td>${a.nome_lider || '-'}</td>
                     <td>${a.problema || '-'}</td>
-                    <td><span class="status-${a.status_operacao ? a.status_operacao.replace(' ', '-') : 'nao-operando'}">${a.status_operacao || 'não operando'}</span> ${statusButton(a)}</td>
+                    <td><span class="status-${a.status_operacao ? a.status_operacao.replace(' ', '-') : 'nao-operando'}">${a.status_operacao || 'não operando'}</span></td>
                     <td>${a.criado_em ? new Date(a.criado_em).toLocaleString() : '-'}</td>
                 `;
                 tbody.appendChild(row);
