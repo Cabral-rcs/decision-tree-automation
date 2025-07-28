@@ -68,7 +68,7 @@ def check_backend():
         
         # Verifica se tem as rotas principais
         routes = [route.path for route in app.routes]
-        required_routes = ["/", "/health", "/debug", "/alertas", "/lideres", "/frontend-status"]
+        required_routes = ["/", "/health", "/debug", "/alertas", "/frontend-status"]
         
         for route in required_routes:
             if route in routes:

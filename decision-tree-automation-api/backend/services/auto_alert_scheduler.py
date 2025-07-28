@@ -5,7 +5,7 @@ from datetime import datetime, timedelta
 from sqlalchemy.orm import Session
 from backend.models.responses_model import SessionLocal
 from backend.models.auto_alert_config_model import AutoAlertConfig
-from backend.models.lider_model import Lider
+
 from backend.services.mock_data_generator import MockDataGenerator
 
 logger = logging.getLogger(__name__)
@@ -99,35 +99,25 @@ class AutoAlertScheduler:
     
     def _ensure_rafael_cabral_exists(self, db: Session):
         """Garante que o líder Rafael Cabral existe no sistema"""
-        try:
-            rafael = db.query(Lider).filter(Lider.nome_lider == "Rafael Cabral").first()
-            if not rafael:
-                rafael = Lider(nome_lider="Rafael Cabral", chat_id="6435800936")
-                db.add(rafael)
-                db.commit()
-                db.refresh(rafael)
-                logger.info("Líder Rafael Cabral criado automaticamente")
-            return rafael
-        except Exception as e:
-            logger.error(f"Erro ao garantir existência do Rafael Cabral: {str(e)}")
-            raise
+        # Rafael Cabral é o líder fixo, não precisa verificar no banco
+        logger.info("Usando Rafael Cabral como líder fixo (Chat ID: 6435800936)")
+        return {"nome_lider": "Rafael Cabral", "chat_id": "6435800936"}
     
     def _create_alert_directly(self, db: Session, alert_data: dict):
         """Cria alerta diretamente no banco para evitar importação circular"""
         try:
             from backend.models.alerta_model import Alerta
             
-            # Buscar chat_id pelo nome do líder
-            lider = db.query(Lider).filter(Lider.nome_lider == alert_data['nome_lider']).first()
-            if not lider:
-                raise Exception('Líder não encontrado')
+            # Usar Rafael Cabral como líder fixo
+            nome_lider = "Rafael Cabral"
+            chat_id = "6435800936"
             
             # Criar alerta com todos os campos disponíveis
             novo_alerta = Alerta(
-                chat_id=lider.chat_id,
+                chat_id=chat_id,
                 problema=alert_data['problema'],
                 status='pendente',
-                nome_lider=lider.nome_lider,
+                nome_lider=nome_lider,
                 codigo=alert_data.get('codigo'),
                 unidade=alert_data.get('unidade'),
                 frente=alert_data.get('frente'),

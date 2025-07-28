@@ -8,7 +8,6 @@ from sqlalchemy import create_engine, text
 from dotenv import load_dotenv
 from backend.models.alerta_model import Alerta, Base
 from backend.models.auto_alert_config_model import AutoAlertConfig
-from backend.models.lider_model import Lider
 from backend.models.responses_model import Resposta, EstadoUsuario
 
 def migrate_database():
@@ -89,12 +88,7 @@ def migrate_database():
             print("   ✅ Tabela auto_alert_config já existe")
         
         print("6. Verificando tabela lideres...")
-        if 'lideres' not in existing_tables:
-            print("   Criando tabela lideres...")
-            Base.metadata.create_all(bind=engine, tables=[Lider.__table__])
-            print("   ✅ Tabela lideres criada")
-        else:
-            print("   ✅ Tabela lideres já existe")
+        print("   ✅ Tabela lideres não é mais necessária (líder fixo: Rafael Cabral)")
         
         print("7. Verificando tabelas de respostas...")
         if 'respostas' not in existing_tables:

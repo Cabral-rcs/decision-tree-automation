@@ -2,7 +2,7 @@ from fastapi import APIRouter, HTTPException
 from sqlalchemy.orm import Session
 from backend.models.responses_model import SessionLocal
 from backend.models.auto_alert_config_model import AutoAlertConfig
-from backend.models.lider_model import Lider
+
 from backend.models.alerta_model import Alerta
 from backend.services.mock_data_generator import MockDataGenerator
 from datetime import datetime
@@ -13,23 +13,9 @@ logger = logging.getLogger(__name__)
 
 def ensure_rafael_cabral_exists():
     """Garante que o líder Rafael Cabral existe no sistema"""
-    db: Session = SessionLocal()
-    try:
-        # Verifica se Rafael Cabral já existe
-        rafael = db.query(Lider).filter(Lider.nome_lider == "Rafael Cabral").first()
-        if not rafael:
-            # Cria Rafael Cabral se não existir
-            rafael = Lider(nome_lider="Rafael Cabral", chat_id="6435800936")
-            db.add(rafael)
-            db.commit()
-            db.refresh(rafael)
-            logger.info("Líder Rafael Cabral criado automaticamente")
-        return rafael
-    except Exception as e:
-        logger.error(f"Erro ao garantir existência do Rafael Cabral: {str(e)}")
-        raise
-    finally:
-        db.close()
+    # Rafael Cabral é o líder fixo, não precisa verificar no banco
+    logger.info("Usando Rafael Cabral como líder fixo (Chat ID: 6435800936)")
+    return {"nome_lider": "Rafael Cabral", "chat_id": "6435800936"}
 
 @router.get('/auto-alert/status')
 def get_auto_alert_status():
@@ -95,17 +81,16 @@ def create_alert_now():
         # Gera dados mockados
         alert_data = MockDataGenerator.generate_alert_data()
         
-        # Buscar chat_id pelo nome do líder
-        lider = db.query(Lider).filter(Lider.nome_lider == alert_data['nome_lider']).first()
-        if not lider:
-            raise HTTPException(status_code=404, detail='Líder Rafael Cabral não encontrado')
+        # Usar Rafael Cabral como líder fixo
+        nome_lider = "Rafael Cabral"
+        chat_id = "6435800936"
         
         # Criar alerta com todos os dados
         novo_alerta = Alerta(
-            chat_id=lider.chat_id,
+            chat_id=chat_id,
             problema=alert_data['problema'],
             status='pendente',
-            nome_lider=lider.nome_lider,
+            nome_lider=nome_lider,
             codigo=alert_data.get('codigo'),
             unidade=alert_data.get('unidade'),
             frente=alert_data.get('frente'),
