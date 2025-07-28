@@ -5,8 +5,8 @@ from datetime import datetime, timedelta
 from sqlalchemy.orm import Session
 from backend.models.responses_model import SessionLocal
 from backend.models.auto_alert_config_model import AutoAlertConfig
+from backend.models.lider_model import Lider
 from backend.services.mock_data_generator import MockDataGenerator
-# Importações movidas para dentro da função para evitar importação circular
 
 logger = logging.getLogger(__name__)
 
@@ -61,10 +61,6 @@ class AutoAlertScheduler:
     
     def _create_auto_alert(self):
         """Executa a criação automática de alertas"""
-        # Importações locais para evitar importação circular
-        from backend.controllers.alerta_controller import criar_alerta
-        from backend.controllers.auto_alert_controller import ensure_rafael_cabral_exists
-        
         db: Session = SessionLocal()
         try:
             # Verifica se a criação automática está ativa
@@ -81,42 +77,81 @@ class AutoAlertScheduler:
                     return
             
             # Garante que Rafael Cabral existe
-            ensure_rafael_cabral_exists()
+            self._ensure_rafael_cabral_exists(db)
             
             # Gera dados mockados
             alert_data = MockDataGenerator.generate_alert_data()
             
-            # Cria o alerta com todos os dados
-            alerta_dict = {
-                "nome_lider": alert_data["nome_lider"],
-                "problema": f"[AUTO] {alert_data['equipamento']} - {alert_data['operacao']} - {alert_data['justificativa']}",
-                "codigo": alert_data["codigo"],
-                "unidade": alert_data["unidade"],
-                "frente": alert_data["frente"],
-                "equipamento": alert_data["equipamento"],
-                "codigo_equipamento": alert_data["codigo_equipamento"],
-                "tipo_operacao": alert_data["tipo_operacao"],
-                "operacao": alert_data["operacao"],
-                "nome_operador": alert_data["nome_operador"],
-                "data_operacao": alert_data["data_operacao"],
-                "tempo_abertura": alert_data["tempo_abertura"],
-                "tipo_arvore": alert_data["tipo_arvore"],
-                "justificativa": alert_data["justificativa"],
-                "prazo": alert_data["prazo"]
-            }
-            
-            result = criar_alerta(alerta_dict)
+            # Cria o alerta diretamente no banco para evitar importação circular
+            self._create_alert_directly(db, alert_data)
             
             # Atualiza última execução
             config.last_execution = datetime.now()
             db.commit()
             
-            logger.info(f"Alerta automático criado com sucesso: ID {result['id']}")
+            logger.info(f"Alerta automático criado com sucesso")
             
         except Exception as e:
             logger.error(f"Erro ao criar alerta automático: {str(e)}")
+            db.rollback()
         finally:
             db.close()
+    
+    def _ensure_rafael_cabral_exists(self, db: Session):
+        """Garante que o líder Rafael Cabral existe no sistema"""
+        try:
+            rafael = db.query(Lider).filter(Lider.nome_lider == "Rafael Cabral").first()
+            if not rafael:
+                rafael = Lider(nome_lider="Rafael Cabral", chat_id="6435800936")
+                db.add(rafael)
+                db.commit()
+                db.refresh(rafael)
+                logger.info("Líder Rafael Cabral criado automaticamente")
+            return rafael
+        except Exception as e:
+            logger.error(f"Erro ao garantir existência do Rafael Cabral: {str(e)}")
+            raise
+    
+    def _create_alert_directly(self, db: Session, alert_data: dict):
+        """Cria alerta diretamente no banco para evitar importação circular"""
+        try:
+            from backend.models.alerta_model import Alerta
+            
+            # Buscar chat_id pelo nome do líder
+            lider = db.query(Lider).filter(Lider.nome_lider == alert_data['nome_lider']).first()
+            if not lider:
+                raise Exception('Líder não encontrado')
+            
+            # Criar alerta com todos os campos disponíveis
+            novo_alerta = Alerta(
+                chat_id=lider.chat_id,
+                problema=alert_data['problema'],
+                status='pendente',
+                nome_lider=lider.nome_lider,
+                codigo=alert_data.get('codigo'),
+                unidade=alert_data.get('unidade'),
+                frente=alert_data.get('frente'),
+                equipamento=alert_data.get('equipamento'),
+                codigo_equipamento=alert_data.get('codigo_equipamento'),
+                tipo_operacao=alert_data.get('tipo_operacao'),
+                operacao=alert_data.get('operacao'),
+                nome_operador=alert_data.get('nome_operador'),
+                data_operacao=datetime.fromisoformat(alert_data.get('data_operacao')) if alert_data.get('data_operacao') else None,
+                tempo_abertura=alert_data.get('tempo_abertura'),
+                tipo_arvore=alert_data.get('tipo_arvore'),
+                justificativa=alert_data.get('justificativa'),
+                prazo=datetime.fromisoformat(alert_data.get('prazo')) if alert_data.get('prazo') else None
+            )
+            db.add(novo_alerta)
+            db.commit()
+            db.refresh(novo_alerta)
+            
+            logger.info(f"Alerta automático criado: ID {novo_alerta.id}")
+            return novo_alerta
+            
+        except Exception as e:
+            logger.error(f"Erro ao criar alerta diretamente: {str(e)}")
+            raise
     
     def update_interval(self, interval_minutes: int):
         """Atualiza o intervalo de criação de alertas"""

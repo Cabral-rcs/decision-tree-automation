@@ -3,8 +3,8 @@ from sqlalchemy.orm import Session
 from backend.models.responses_model import SessionLocal
 from backend.models.auto_alert_config_model import AutoAlertConfig
 from backend.models.lider_model import Lider
+from backend.models.alerta_model import Alerta
 from backend.services.mock_data_generator import MockDataGenerator
-# Importações movidas para dentro das funções para evitar importação circular
 from datetime import datetime
 import logging
 
@@ -25,6 +25,9 @@ def ensure_rafael_cabral_exists():
             db.refresh(rafael)
             logger.info("Líder Rafael Cabral criado automaticamente")
         return rafael
+    except Exception as e:
+        logger.error(f"Erro ao garantir existência do Rafael Cabral: {str(e)}")
+        raise
     finally:
         db.close()
 
@@ -46,6 +49,9 @@ def get_auto_alert_status():
             "interval_minutes": config.interval_minutes,
             "last_execution": config.last_execution.isoformat() if config.last_execution else None
         }
+    except Exception as e:
+        logger.error(f"Erro ao obter status dos alertas automáticos: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Erro interno: {str(e)}")
     finally:
         db.close()
 
@@ -72,15 +78,16 @@ def toggle_auto_alert():
             "is_active": config.is_active,
             "message": f"Criação automática de alertas {status}"
         }
+    except Exception as e:
+        logger.error(f"Erro ao alternar status dos alertas automáticos: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Erro interno: {str(e)}")
     finally:
         db.close()
 
 @router.post('/auto-alert/create-now')
 def create_alert_now():
     """Cria um alerta imediatamente (para teste)"""
-    # Importação local para evitar importação circular
-    from backend.controllers.alerta_controller import criar_alerta
-    
+    db: Session = SessionLocal()
     try:
         # Garante que Rafael Cabral existe
         ensure_rafael_cabral_exists()
@@ -88,38 +95,50 @@ def create_alert_now():
         # Gera dados mockados
         alert_data = MockDataGenerator.generate_alert_data()
         
-        # Cria o alerta usando o controller existente com todos os dados
-        alerta_dict = {
-            "nome_lider": alert_data["nome_lider"],
-            "problema": f"[AUTO] {alert_data['equipamento']} - {alert_data['operacao']} - {alert_data['justificativa']}",
-            "codigo": alert_data["codigo"],
-            "unidade": alert_data["unidade"],
-            "frente": alert_data["frente"],
-            "equipamento": alert_data["equipamento"],
-            "codigo_equipamento": alert_data["codigo_equipamento"],
-            "tipo_operacao": alert_data["tipo_operacao"],
-            "operacao": alert_data["operacao"],
-            "nome_operador": alert_data["nome_operador"],
-            "data_operacao": alert_data["data_operacao"],
-            "tempo_abertura": alert_data["tempo_abertura"],
-            "tipo_arvore": alert_data["tipo_arvore"],
-            "justificativa": alert_data["justificativa"],
-            "prazo": alert_data["prazo"]
-        }
+        # Buscar chat_id pelo nome do líder
+        lider = db.query(Lider).filter(Lider.nome_lider == alert_data['nome_lider']).first()
+        if not lider:
+            raise HTTPException(status_code=404, detail='Líder Rafael Cabral não encontrado')
         
-        result = criar_alerta(alerta_dict)
+        # Criar alerta com todos os dados
+        novo_alerta = Alerta(
+            chat_id=lider.chat_id,
+            problema=alert_data['problema'],
+            status='pendente',
+            nome_lider=lider.nome_lider,
+            codigo=alert_data.get('codigo'),
+            unidade=alert_data.get('unidade'),
+            frente=alert_data.get('frente'),
+            equipamento=alert_data.get('equipamento'),
+            codigo_equipamento=alert_data.get('codigo_equipamento'),
+            tipo_operacao=alert_data.get('tipo_operacao'),
+            operacao=alert_data.get('operacao'),
+            nome_operador=alert_data.get('nome_operador'),
+            data_operacao=datetime.fromisoformat(alert_data.get('data_operacao')) if alert_data.get('data_operacao') else None,
+            tempo_abertura=alert_data.get('tempo_abertura'),
+            tipo_arvore=alert_data.get('tipo_arvore'),
+            justificativa=alert_data.get('justificativa'),
+            prazo=datetime.fromisoformat(alert_data.get('prazo')) if alert_data.get('prazo') else None
+        )
+        db.add(novo_alerta)
+        db.commit()
+        db.refresh(novo_alerta)
         
-        logger.info(f"Alerta automático criado: {result}")
+        logger.info(f"Alerta automático criado: ID {novo_alerta.id}")
         
         return {
             "success": True,
-            "alert_id": result["id"],
+            "alert_id": novo_alerta.id,
             "alert_data": alert_data,
             "message": "Alerta automático criado com sucesso"
         }
+    except HTTPException:
+        raise
     except Exception as e:
         logger.error(f"Erro ao criar alerta automático: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Erro ao criar alerta: {str(e)}")
+    finally:
+        db.close()
 
 @router.post('/auto-alert/update-interval')
 def update_interval(interval_minutes: int):
@@ -148,5 +167,8 @@ def update_interval(interval_minutes: int):
             "interval_minutes": config.interval_minutes,
             "message": f"Intervalo atualizado para {interval_minutes} minutos"
         }
+    except Exception as e:
+        logger.error(f"Erro ao atualizar intervalo: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Erro interno: {str(e)}")
     finally:
         db.close() 

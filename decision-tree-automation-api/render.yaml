@@ -12,9 +12,8 @@ services:
         sync: false
       - key: CHAT_IDS
         sync: false
+      - key: PYTHON_VERSION
+        value: "3.13"
     buildFilter:
       paths:
         - decision-tree-automation-api/**
-    envVars:
-      - key: PYTHON_VERSION
-        value: "3.13"

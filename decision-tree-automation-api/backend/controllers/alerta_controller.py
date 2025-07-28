@@ -7,13 +7,21 @@ import requests
 from datetime import datetime, timezone, timedelta
 import pytz
 from backend.models.lider_model import Lider
+import logging
 
 router = APIRouter()
+logger = logging.getLogger(__name__)
 
 @router.post('/alertas')
 def criar_alerta(alerta: dict):
     db: Session = SessionLocal()
     try:
+        # Validação dos dados obrigatórios
+        if not alerta.get('nome_lider'):
+            raise HTTPException(status_code=400, detail='Nome do líder é obrigatório')
+        if not alerta.get('problema'):
+            raise HTTPException(status_code=400, detail='Problema é obrigatório')
+        
         # Buscar chat_id pelo nome do líder
         lider = db.query(Lider).filter(Lider.nome_lider == alerta['nome_lider']).first()
         if not lider:
@@ -34,29 +42,42 @@ def criar_alerta(alerta: dict):
             tipo_operacao=alerta.get('tipo_operacao'),
             operacao=alerta.get('operacao'),
             nome_operador=alerta.get('nome_operador'),
-            data_operacao=alerta.get('data_operacao'),
+            data_operacao=datetime.fromisoformat(alerta.get('data_operacao')) if alerta.get('data_operacao') else None,
             tempo_abertura=alerta.get('tempo_abertura'),
             tipo_arvore=alerta.get('tipo_arvore'),
             justificativa=alerta.get('justificativa'),
-            prazo=alerta.get('prazo')
+            prazo=datetime.fromisoformat(alerta.get('prazo')) if alerta.get('prazo') else None
         )
         db.add(novo_alerta)
         db.commit()
         db.refresh(novo_alerta)
+        
         # Envia mensagem ao líder no Telegram
-        mensagem = f"Qual a previsão para o problema: {novo_alerta.problema}?\n(Responda apenas o horário no formato HH:MM)"
-        payload = {
-            'chat_id': novo_alerta.chat_id,
-            'text': mensagem
-        }
-        resp = requests.post(f'{TELEGRAM_API_URL}/sendMessage', data=payload)
-        if resp.ok:
-            mensagem_id = resp.json().get('result', {}).get('message_id')
-            novo_alerta.mensagem_id = mensagem_id
-            db.commit()
-        else:
-            print('Erro ao enviar mensagem ao Telegram:', resp.text)
-        return {"id": novo_alerta.id}
+        try:
+            mensagem = f"Qual a previsão para o problema: {novo_alerta.problema}?\n(Responda apenas o horário no formato HH:MM)"
+            payload = {
+                'chat_id': novo_alerta.chat_id,
+                'text': mensagem
+            }
+            resp = requests.post(f'{TELEGRAM_API_URL}/sendMessage', data=payload, timeout=10)
+            if resp.ok:
+                mensagem_id = resp.json().get('result', {}).get('message_id')
+                novo_alerta.mensagem_id = mensagem_id
+                db.commit()
+                logger.info(f"Mensagem enviada ao Telegram para chat_id {novo_alerta.chat_id}")
+            else:
+                logger.warning(f'Erro ao enviar mensagem ao Telegram: {resp.status_code} - {resp.text}')
+        except Exception as e:
+            logger.error(f'Erro ao enviar mensagem ao Telegram: {str(e)}')
+            # Continua mesmo se falhar o envio da mensagem
+        
+        return {"id": novo_alerta.id, "message": "Alerta criado com sucesso"}
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Erro ao criar alerta: {str(e)}")
+        db.rollback()
+        raise HTTPException(status_code=500, detail=f"Erro interno: {str(e)}")
     finally:
         db.close()
 
@@ -65,23 +86,31 @@ def atualizar_status_operacao(alerta_id: int, body: dict):
     novo_status = body.get('status_operacao')
     if novo_status not in ['operando', 'não operando']:
         raise HTTPException(status_code=400, detail='Status inválido')
+    
     db: Session = SessionLocal()
     try:
         alerta = db.query(Alerta).filter(Alerta.id == alerta_id).first()
         if not alerta:
             raise HTTPException(status_code=404, detail='Alerta não encontrado')
+        
         alerta.status_operacao = novo_status
         # Se mudou para operando, salva o horário
         if novo_status == 'operando':
-            from datetime import datetime
-            import pytz
             tz_br = pytz.timezone('America/Sao_Paulo')
             alerta.horario_operando = datetime.now(tz_br)
         # Se mudou para operando, vai para encerradas
         if novo_status == 'operando' and alerta.status == 'escalada':
             alerta.status = 'encerrada'
+        
         db.commit()
-        return {"ok": True}
+        logger.info(f"Status do alerta {alerta_id} atualizado para {novo_status}")
+        return {"ok": True, "message": f"Status atualizado para {novo_status}"}
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Erro ao atualizar status do alerta {alerta_id}: {str(e)}")
+        db.rollback()
+        raise HTTPException(status_code=500, detail=f"Erro interno: {str(e)}")
     finally:
         db.close()
 
@@ -94,6 +123,7 @@ def listar_alertas():
         escaladas = []
         atrasadas = []
         encerradas = []
+        
         for alerta in db.query(Alerta).order_by(Alerta.criado_em.desc()).all():
             if alerta.status == 'pendente':
                 pendentes.append(alerta)
@@ -109,6 +139,7 @@ def listar_alertas():
                     escaladas.append(alerta)
             else:
                 escaladas.append(alerta)
+        
         return {
             "pendentes": [
                 {
@@ -154,5 +185,8 @@ def listar_alertas():
                 } for a in encerradas
             ]
         }
+    except Exception as e:
+        logger.error(f"Erro ao listar alertas: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Erro interno: {str(e)}")
     finally:
         db.close() 

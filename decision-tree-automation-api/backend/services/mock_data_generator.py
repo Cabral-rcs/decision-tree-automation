@@ -94,7 +94,7 @@ class MockDataGenerator:
         
         return {
             "status": "Pendente",
-            "codigo": codigo,
+            "codigo": str(codigo),  # Convertido para string
             "unidade": unidade,
             "frente": frente,
             "equipamento": equipamento["nome"],
@@ -102,13 +102,14 @@ class MockDataGenerator:
             "tipo_operacao": tipo_operacao,
             "operacao": operacao,
             "nome_operador": "Rafael Cabral",
-            "data_operacao": data_operacao.strftime("%Y-%m-%d %H:%M:%S"),
+            "data_operacao": data_operacao.isoformat(),  # Formato ISO para compatibilidade
             "tempo_abertura": tempo_abertura_str,
             "tipo_arvore": "Árvore de Manutenção",
             "justificativa": problema,
-            "prazo": prazo.strftime("%Y-%m-%d %H:%M:%S"),
+            "prazo": prazo.isoformat(),  # Formato ISO para compatibilidade
             "nome_lider": "Rafael Cabral",
-            "chat_id": "6435800936"
+            "chat_id": "6435800936",
+            "problema": f"[AUTO] {equipamento['nome']} - {operacao} - {problema}"  # Adicionado campo problema
         }
     
     @classmethod
