@@ -6,8 +6,8 @@
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate, max-age=0">
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="Thu, 01 Jan 1970 00:00:00 GMT">
-    <meta name="version" content="2024-12-19-22-00-00">
-    <meta name="build-timestamp" content="2024-12-19T22:00:00Z">
+    <meta name="version" content="2024-12-19-22-30-00">
+    <meta name="build-timestamp" content="2024-12-19T22:30:00Z">
     <title>Gestão de Alertas - Telegram Bot</title>
     <style>
         body { font-family: Arial, sans-serif; margin: 2em; }
@@ -68,6 +68,29 @@
         }
         .status-operando { color: green; font-weight: bold; }
         .status-nao-operando { color: red; font-weight: bold; }
+
+        /* Animações para notificações */
+        @keyframes slideIn {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        @keyframes slideOut {
+            from {
+                transform: translateX(0);
+                opacity: 1;
+            }
+            to {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+        }
     </style>
 </head>
 <body>
@@ -167,6 +190,9 @@
         </div>
     </div>
     <script>
+        let ultimaAtualizacao = null;
+        let intervaloAtualizacao = null;
+
         function abrirAba(aba) {
             document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
             document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
@@ -186,118 +212,178 @@
             const label = a.status_operacao === 'operando' ? 'Não operando' : 'Operando';
             return `<button class="btn" onclick="atualizarStatus(${a.id}, '${next}')">${label}</button>`;
         }
-        async function carregarAlertas() {
-            const resp = await fetch('/alertas');
-            const dados = await resp.json();
-            const pendentes = dados.pendentes;
-            const escaladas = dados.escaladas;
-            const atrasadas = dados.atrasadas;
-            const encerradas = dados.encerradas;
-            document.getElementById('pendentes-body').innerHTML = '';
-            document.getElementById('escaladas-body').innerHTML = '';
-            document.getElementById('atrasadas-body').innerHTML = '';
-            document.getElementById('encerradas-body').innerHTML = '';
-            pendentes.forEach(a => {
-                const tr = document.createElement('tr');
-                tr.innerHTML = `
-                    <td>${a.id}</td>
-                    <td>${a.codigo || '-'}</td>
-                    <td>${a.unidade || '-'}</td>
-                    <td>${a.frente || '-'}</td>
-                    <td>${a.equipamento || '-'}</td>
-                    <td>${a.tipo_operacao || '-'}</td>
-                    <td>${a.operacao || '-'}</td>
-                    <td>${a.nome_operador || '-'}</td>
-                    <td>${a.data_operacao ? new Date(a.data_operacao).toLocaleString() : '-'}</td>
-                    <td>${a.tempo_abertura || '-'}</td>
-                    <td>${a.tipo_arvore || '-'}</td>
-                    <td>${a.justificativa || '-'}</td>
-                    <td>${a.prazo ? new Date(a.prazo).toLocaleString() : '-'}</td>
-                    <td>${a.nome_lider || '-'}</td>
-                    <td>${a.problema}</td>
-                    <td><span class="status-${a.status_operacao.replace(' ', '-')}">${a.status_operacao}</span> ${statusButton(a)}</td>
-                    <td>${a.criado_em ? new Date(a.criado_em).toLocaleString() : '-'}</td>
-                `;
-                document.getElementById('pendentes-body').appendChild(tr);
-            });
-            escaladas.forEach(a => {
-                const tr = document.createElement('tr');
-                tr.className = 'bg-escalada';
-                tr.innerHTML = `
-                    <td>${a.id}</td>
-                    <td>${a.codigo || '-'}</td>
-                    <td>${a.unidade || '-'}</td>
-                    <td>${a.frente || '-'}</td>
-                    <td>${a.equipamento || '-'}</td>
-                    <td>${a.tipo_operacao || '-'}</td>
-                    <td>${a.operacao || '-'}</td>
-                    <td>${a.nome_operador || '-'}</td>
-                    <td>${a.data_operacao ? new Date(a.data_operacao).toLocaleString() : '-'}</td>
-                    <td>${a.tempo_abertura || '-'}</td>
-                    <td>${a.tipo_arvore || '-'}</td>
-                    <td>${a.justificativa || '-'}</td>
-                    <td>${a.prazo ? new Date(a.prazo).toLocaleString() : '-'}</td>
-                    <td>${a.nome_lider || '-'}</td>
-                    <td>${a.problema}</td>
-                    <td>${a.previsao || '-'}</td>
-                    <td><span class="status-${a.status_operacao.replace(' ', '-')}">${a.status_operacao}</span> ${statusButton(a)}</td>
-                    <td>${a.respondido_em ? new Date(a.respondido_em).toLocaleString() : '-'}</td>
-                `;
-                document.getElementById('escaladas-body').appendChild(tr);
-            });
-            atrasadas.forEach(a => {
-                const tr = document.createElement('tr');
-                tr.className = 'bg-atrasada';
-                tr.innerHTML = `
-                    <td>${a.id}</td>
-                    <td>${a.codigo || '-'}</td>
-                    <td>${a.unidade || '-'}</td>
-                    <td>${a.frente || '-'}</td>
-                    <td>${a.equipamento || '-'}</td>
-                    <td>${a.tipo_operacao || '-'}</td>
-                    <td>${a.operacao || '-'}</td>
-                    <td>${a.nome_operador || '-'}</td>
-                    <td>${a.data_operacao ? new Date(a.data_operacao).toLocaleString() : '-'}</td>
-                    <td>${a.tempo_abertura || '-'}</td>
-                    <td>${a.tipo_arvore || '-'}</td>
-                    <td>${a.justificativa || '-'}</td>
-                    <td>${a.prazo ? new Date(a.prazo).toLocaleString() : '-'}</td>
-                    <td>${a.nome_lider || '-'}</td>
-                    <td>${a.problema}</td>
-                    <td>${a.previsao || '-'}</td>
-                    <td><span class="status-${a.status_operacao.replace(' ', '-')}">${a.status_operacao}</span> ${statusButton(a)}</td>
-                    <td>${a.respondido_em ? new Date(a.respondido_em).toLocaleString() : '-'}</td>
-                `;
-                document.getElementById('atrasadas-body').appendChild(tr);
-            });
-            encerradas.forEach(a => {
-                const tr = document.createElement('tr');
-                tr.className = 'bg-encerrada';
-                tr.innerHTML = `
-                    <td>${a.id}</td>
-                    <td>${a.codigo || '-'}</td>
-                    <td>${a.unidade || '-'}</td>
-                    <td>${a.frente || '-'}</td>
-                    <td>${a.equipamento || '-'}</td>
-                    <td>${a.tipo_operacao || '-'}</td>
-                    <td>${a.operacao || '-'}</td>
-                    <td>${a.nome_operador || '-'}</td>
-                    <td>${a.data_operacao ? new Date(a.data_operacao).toLocaleString() : '-'}</td>
-                    <td>${a.tempo_abertura || '-'}</td>
-                    <td>${a.tipo_arvore || '-'}</td>
-                    <td>${a.justificativa || '-'}</td>
-                    <td>${a.prazo ? new Date(a.prazo).toLocaleString() : '-'}</td>
-                    <td>${a.nome_lider || '-'}</td>
-                    <td>${a.problema}</td>
-                    <td>${a.previsao || '-'}</td>
-                    <td><span class="status-${a.status_operacao.replace(' ', '-')}">${a.status_operacao}</span></td>
-                    <td>${a.respondido_em ? new Date(a.respondido_em).toLocaleString() : '-'}</td>
-                    <td>${a.horario_operando ? new Date(a.horario_operando).toLocaleString() : '-'}</td>
-                `;
-                document.getElementById('encerradas-body').appendChild(tr);
-            });
+        // Função para verificar se há atualizações
+        async function verificarAtualizacoes() {
+            try {
+                const response = await fetch('/alertas/ultima-atualizacao');
+                const data = await response.json();
+                
+                if (data.tem_atualizacao && data.ultima_atualizacao !== ultimaAtualizacao) {
+                    console.log('🔄 Atualização detectada! Recarregando dados...');
+                    ultimaAtualizacao = data.ultima_atualizacao;
+                    await carregarAlertas();
+                    
+                    // Mostra notificação
+                    mostrarNotificacao('Novo prazo registrado via Telegram!', 'success');
+                }
+            } catch (error) {
+                console.error('Erro ao verificar atualizações:', error);
+            }
         }
 
+        // Função para mostrar notificação
+        function mostrarNotificacao(mensagem, tipo = 'info') {
+            const notificacao = document.createElement('div');
+            notificacao.className = `notificacao notificacao-${tipo}`;
+            notificacao.textContent = mensagem;
+            
+            // Adiciona estilos
+            notificacao.style.cssText = `
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                padding: 15px 20px;
+                border-radius: 5px;
+                color: white;
+                font-weight: bold;
+                z-index: 1000;
+                animation: slideIn 0.3s ease-out;
+                max-width: 300px;
+            `;
+            
+            if (tipo === 'success') {
+                notificacao.style.backgroundColor = '#28a745';
+            } else if (tipo === 'error') {
+                notificacao.style.backgroundColor = '#dc3545';
+            } else {
+                notificacao.style.backgroundColor = '#17a2b8';
+            }
+            
+            document.body.appendChild(notificacao);
+            
+            // Remove após 5 segundos
+            setTimeout(() => {
+                notificacao.style.animation = 'slideOut 0.3s ease-in';
+                setTimeout(() => {
+                    if (notificacao.parentNode) {
+                        notificacao.parentNode.removeChild(notificacao);
+                    }
+                }, 300);
+            }, 5000);
+        }
+
+        // Função para verificar se há atualizações
+        async function verificarAtualizacoes() {
+            try {
+                const response = await fetch('/alertas/ultima-atualizacao');
+                const data = await response.json();
+                
+                if (data.tem_atualizacao && data.ultima_atualizacao !== ultimaAtualizacao) {
+                    console.log('🔄 Atualização detectada! Recarregando dados...');
+                    ultimaAtualizacao = data.ultima_atualizacao;
+                    await carregarAlertas();
+                    
+                    // Mostra notificação
+                    mostrarNotificacao('Novo prazo registrado via Telegram!', 'success');
+                }
+            } catch (error) {
+                console.error('Erro ao verificar atualizações:', error);
+            }
+        }
+
+        // Função para mostrar notificação
+        function mostrarNotificacao(mensagem, tipo = 'info') {
+            const notificacao = document.createElement('div');
+            notificacao.className = `notificacao notificacao-${tipo}`;
+            notificacao.textContent = mensagem;
+            
+            // Adiciona estilos
+            notificacao.style.cssText = `
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                padding: 15px 20px;
+                border-radius: 5px;
+                color: white;
+                font-weight: bold;
+                z-index: 1000;
+                animation: slideIn 0.3s ease-out;
+                max-width: 300px;
+            `;
+            
+            if (tipo === 'success') {
+                notificacao.style.backgroundColor = '#28a745';
+            } else if (tipo === 'error') {
+                notificacao.style.backgroundColor = '#dc3545';
+            } else {
+                notificacao.style.backgroundColor = '#17a2b8';
+            }
+            
+            document.body.appendChild(notificacao);
+            
+            // Remove após 5 segundos
+            setTimeout(() => {
+                notificacao.style.animation = 'slideOut 0.3s ease-in';
+                setTimeout(() => {
+                    if (notificacao.parentNode) {
+                        notificacao.parentNode.removeChild(notificacao);
+                    }
+                }, 300);
+            }, 5000);
+        }
+
+        // Função para iniciar verificação automática
+        function iniciarVerificacaoAutomatica() {
+            // Verifica a cada 5 segundos
+            intervaloAtualizacao = setInterval(verificarAtualizacoes, 5000);
+            console.log('🔄 Verificação automática iniciada (a cada 5 segundos)');
+        }
+
+        // Função para parar verificação automática
+        function pararVerificacaoAutomatica() {
+            if (intervaloAtualizacao) {
+                clearInterval(intervaloAtualizacao);
+                intervaloAtualizacao = null;
+                console.log('⏹️ Verificação automática parada');
+            }
+        }
+
+        // Função para carregar alertas com timestamp
+        async function carregarAlertas() {
+            try {
+                const response = await fetch('/alertas');
+                const data = await response.json();
+                
+                // Atualiza o timestamp da última atualização
+                if (data.ultima_atualizacao) {
+                    ultimaAtualizacao = data.ultima_atualizacao;
+                }
+                
+                // Resto da função permanece igual...
+                const pendentes = data.pendentes || [];
+                const escaladas = data.escaladas || [];
+                const atrasadas = data.atrasadas || [];
+                const encerradas = data.encerradas || [];
+                
+                // Atualiza contadores
+                document.getElementById('contador-pendentes').textContent = pendentes.length;
+                document.getElementById('contador-escaladas').textContent = escaladas.length;
+                document.getElementById('contador-atrasadas').textContent = atrasadas.length;
+                document.getElementById('contador-encerradas').textContent = encerradas.length;
+                
+                // Renderiza tabelas
+                renderizarTabelaPendentes(pendentes);
+                renderizarTabelaEscaladas(escaladas);
+                renderizarTabelaAtrasadas(atrasadas);
+                renderizarTabelaEncerradas(encerradas);
+                
+                console.log(`📊 Alertas carregados: ${pendentes.length} pendentes, ${escaladas.length} escaladas, ${atrasadas.length} atrasadas, ${encerradas.length} encerradas`);
+                
+            } catch (error) {
+                console.error('Erro ao carregar alertas:', error);
+                mostrarNotificacao('Erro ao carregar alertas', 'error');
+            }
+        }
         
         async function carregarStatusAutoAlert() {
             try {
@@ -368,6 +454,11 @@
         
         carregarAlertas();
         carregarStatusAutoAlert();
+        
+        // Inicia verificação automática de atualizações
+        iniciarVerificacaoAutomatica();
+        
+        // Atualiza alertas a cada 10 segundos
         setInterval(carregarAlertas, 10000);
         setInterval(carregarStatusAutoAlert, 30000);
         
@@ -397,6 +488,6 @@
         console.log('🔄 Auto-refresh ativo a cada 5 minutos');
         console.log('⌨️  Use Ctrl+F5 para forçar refresh manual');
     </script>
-    <!-- Timestamp: 2024-12-19 22:00:00 - Webhook Telegram configurado -->
+    <!-- Timestamp: 2024-12-19 22:30:00 - Atualização automática do frontend implementada -->
 </body>
 </html>

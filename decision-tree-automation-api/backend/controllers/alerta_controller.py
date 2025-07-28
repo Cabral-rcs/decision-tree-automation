@@ -195,3 +195,29 @@ def listar_alertas():
         raise HTTPException(status_code=500, detail=f"Erro interno: {str(e)}")
     finally:
         db.close() 
+
+@router.get("/alertas/ultima-atualizacao")
+def get_ultima_atualizacao():
+    """Retorna a data da última atualização de alertas"""
+    db = SessionLocal()
+    try:
+        # Busca o alerta mais recentemente atualizado
+        ultimo_alerta = db.query(Alerta).order_by(Alerta.respondido_em.desc()).first()
+        
+        if ultimo_alerta and ultimo_alerta.respondido_em:
+            return {
+                "ultima_atualizacao": ultimo_alerta.respondido_em.isoformat(),
+                "alerta_id": ultimo_alerta.id,
+                "tem_atualizacao": True
+            }
+        else:
+            return {
+                "ultima_atualizacao": None,
+                "alerta_id": None,
+                "tem_atualizacao": False
+            }
+    except Exception as e:
+        logger.error(f"Erro ao buscar última atualização: {str(e)}")
+        return {"error": str(e)}
+    finally:
+        db.close() 
