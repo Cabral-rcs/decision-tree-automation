@@ -1,215 +1,362 @@
 # Decision Tree Automation
 
-Este repositório contém uma solução modular para automação de decisões baseada em alertas, com integração ao Telegram e interface web para gestão.
+Sistema de automação de decisões baseado em alertas operacionais, com integração ao Telegram para comunicação com líderes e interface web para gestão.
 
 ---
 
-## Estrutura do Projeto
+## Arquitetura de Software
+
+### Padrão Arquitetural: Model-View-Controller (MVC)
+
+O projeto segue o padrão MVC, separando claramente as responsabilidades:
+
+- **Models**: Definem a estrutura dos dados e regras de negócio
+- **Views**: Gerenciam a apresentação e roteamento das APIs
+- **Controllers**: Contêm a lógica de negócio e integrações
+
+### Estrutura de Camadas
 
 ```
-decision-tree-automation/
-├─ decision-tree-automation-api/      # Backend (API, lógica, banco, integrações)
-│  ├─ backend/
-│  │  ├─ controllers/
-│  │  ├─ models/
-│  │  ├─ views/
-│  │  ├─ main.py
-│  │  ├─ config.py
-│  │  └─ __init__.py
-│  ├─ requirements.txt
-│  ├─ render.yaml
-│  └─ start.sh
-├─ decision-tree-automation-ui/       # Frontend (HTML/JS)
-│  └─ index.html
-└─ README.md
+┌─────────────────────────────────────┐
+│           Frontend (UI)             │
+│      HTML/CSS/JavaScript            │
+└─────────────────┬───────────────────┘
+                  │ HTTP/REST
+┌─────────────────▼───────────────────┐
+│           Backend (API)             │
+│  ┌─────────────┬─────────────────┐  │
+│  │ Controllers │ Business Logic  │  │
+│  └─────────────┼─────────────────┤  │
+│  │    Views    │ API Routing     │  │
+│  └─────────────┼─────────────────┤  │
+│    Models      │ Data Structure  │  │
+│  └─────────────┴─────────────────┘  │
+└─────────────────┬───────────────────┘
+                  │ Database
+┌─────────────────▼───────────────────┐
+│         PostgreSQL Database         │
+└─────────────────────────────────────┘
 ```
+
+### Fluxo de Dados
+
+1. **Frontend** → **Controllers** (via HTTP/REST)
+2. **Controllers** → **Models** (manipulação de dados)
+3. **Models** → **Database** (persistência)
+4. **External APIs** → **Controllers** (integrações)
 
 ---
 
-## Tecnologias Utilizadas
+## Modularidade de Códigos
+
+### Separação de Responsabilidades
+
+O código está organizado em módulos bem definidos:
+
+#### Backend (`decision-tree-automation-api/backend/`)
+
+```
+backend/
+├── controllers/           # Lógica de negócio e integrações
+│   ├── alerta_controller.py      # Gestão de alertas
+│   ├── lider_controller.py       # CRUD de líderes
+│   ├── telegram_scheduler.py     # Agendamento de mensagens
+│   └── telegram_webhook.py       # Processamento de respostas
+├── models/               # Estruturas de dados
+│   ├── alerta_model.py           # Modelo de alertas
+│   ├── lider_model.py            # Modelo de líderes
+│   └── responses_model.py        # Modelo de respostas
+├── views/                # Roteamento e apresentação
+│   └── api_router.py             # Definição de endpoints
+├── main.py              # Ponto de entrada da aplicação
+├── config.py            # Configurações globais
+└── __init__.py          # Inicialização do pacote
+```
+
+#### Frontend (`decision-tree-automation-ui/`)
+
+```
+decision-tree-automation-ui/
+└── index.html           # Interface web completa
+```
+
+### Benefícios da Modularidade
+
+- **Manutenibilidade**: Cada módulo tem responsabilidade específica
+- **Testabilidade**: Componentes isolados facilitam testes unitários
+- **Escalabilidade**: Novos módulos podem ser adicionados sem afetar existentes
+- **Reutilização**: Módulos podem ser reutilizados em outros projetos
+
+---
+
+## Tecnologias Envolvidas
 
 ### Backend
 
-- **Python 3.8+**  
-  Linguagem principal para lógica de negócio, API e integrações.
-
-- **FastAPI**  
-  Framework web moderno e performático para construção de APIs REST.  
-  *Motivo:* Simplicidade, performance, tipagem forte e documentação automática.
-
-- **Uvicorn**  
-  Servidor ASGI leve e rápido para rodar aplicações FastAPI.  
-  *Motivo:* Compatibilidade com FastAPI e alta performance.
-
-- **SQLAlchemy**  
-  ORM (Object Relational Mapper) para modelagem e manipulação do banco de dados relacional.  
-  *Motivo:* Flexibilidade, integração fácil com múltiplos bancos e abstração de queries SQL.
-
-- **psycopg2-binary**  
-  Driver para conexão com bancos PostgreSQL.  
-  *Motivo:* Confiável, performático e padrão de mercado para Python + PostgreSQL.
-
-- **python-dotenv**  
-  Carrega variáveis de ambiente de arquivos `.env`.  
-  *Motivo:* Facilita configuração segura e desacoplada do código.
-
-- **requests**  
-  Biblioteca HTTP para integração com APIs externas (ex: Telegram).  
-  *Motivo:* Simplicidade e robustez para chamadas HTTP.
-
-- **apscheduler**  
-  Agendamento de tarefas (ex: envio automático de mensagens).  
-  *Motivo:* Permite automação de fluxos recorrentes.
-
-- **pytz**  
-  Manipulação de fusos horários.  
-  *Motivo:* Necessário para tratar datas e horários corretamente no contexto brasileiro.
+| Tecnologia | Versão | Propósito |
+|------------|--------|-----------|
+| Python | 3.8+ | Linguagem principal |
+| FastAPI | Latest | Framework web |
+| Uvicorn | Latest | Servidor ASGI |
+| SQLAlchemy | Latest | ORM |
+| psycopg2-binary | Latest | Driver PostgreSQL |
+| python-dotenv | Latest | Variáveis de ambiente |
+| requests | Latest | HTTP client |
+| pytz | Latest | Fusos horários |
 
 ### Frontend
 
-- **HTML5, CSS3, JavaScript (Vanilla)**  
-  Interface web leve, sem frameworks, para cadastro e visualização de alertas/líderes.  
-  *Motivo:* Simplicidade, fácil manutenção e integração direta com a API.
+| Tecnologia | Versão | Propósito |
+|------------|--------|-----------|
+| HTML5 | - | Estrutura da interface |
+| CSS3 | - | Estilização |
+| JavaScript (ES6+) | - | Interatividade |
+
+### Infraestrutura
+
+| Tecnologia | Propósito |
+|------------|-----------|
+| PostgreSQL | Banco de dados |
+| Telegram Bot API | Integração de mensagens |
+| Render | Deploy e hospedagem |
 
 ---
 
-## Armazenamento de Dados
+## Papel das Tecnologias no Projeto
 
-- **Banco de Dados Relacional (PostgreSQL recomendado)**
-  - Todas as entidades (alertas, líderes, respostas, estados) são persistidas via SQLAlchemy.
-  - A string de conexão é configurada via variável de ambiente `DATABASE_URL`.
-  - O modelo de dados é inicializado automaticamente ao subir a aplicação.
+### Python 3.8+
+**Função**: Linguagem base para todo o backend
+- **Onde é usado**: Todos os arquivos `.py` do projeto
+- **Como é usado**: 
+  - Lógica de negócio nos controllers
+  - Modelagem de dados com SQLAlchemy
+  - Integração com APIs externas
+  - Processamento de webhooks do Telegram
+- **Exemplo prático**: `alerta_controller.py` usa Python para criar alertas, enviar mensagens e categorizar status
 
-- **Configuração**
-  - Variáveis sensíveis (tokens, URLs, IDs) são lidas de um arquivo `.env` ou do ambiente do sistema operacional.
+### FastAPI
+**Função**: Framework web para construção da API REST
+- **Onde é usado**: `main.py`, `api_router.py`, todos os controllers
+- **Como é usado**:
+  - Criação de endpoints REST (`/alertas`, `/lideres`, `/webhook/telegram`)
+  - Validação automática de dados de entrada
+  - Documentação automática da API (Swagger/OpenAPI)
+  - Middleware para CORS e autenticação
+- **Exemplo prático**: `@router.post('/alertas')` cria endpoint para cadastro de alertas
+
+### Uvicorn
+**Função**: Servidor ASGI para rodar aplicações FastAPI
+- **Onde é usado**: `start.sh`, linha de comando para desenvolvimento
+- **Como é usado**:
+  - Servidor de desenvolvimento local
+  - Servidor de produção no Render
+  - Configuração de host, porta e workers
+- **Exemplo prático**: `uvicorn backend.main:app --reload` inicia o servidor
+
+### SQLAlchemy
+**Função**: ORM para manipulação do banco de dados
+- **Onde é usado**: Todos os arquivos em `models/`, `responses_model.py`
+- **Como é usado**:
+  - Definição de modelos de dados (Alerta, Lider, Resposta)
+  - Criação automática de tabelas
+  - Queries complexas e filtros
+  - Gerenciamento de sessões de banco
+- **Exemplo prático**: `class Alerta(Base)` define a estrutura da tabela de alertas
+
+### psycopg2-binary
+**Função**: Driver para conexão com PostgreSQL
+- **Onde é usado**: `responses_model.py`, `alerta_model.py`
+- **Como é usado**:
+  - Conexão com banco PostgreSQL
+  - Execução de queries SQL
+  - Pool de conexões
+- **Exemplo prático**: `create_engine(DATABASE_URL)` estabelece conexão
+
+### python-dotenv
+**Função**: Carregamento de variáveis de ambiente
+- **Onde é usado**: `config.py`, `responses_model.py`
+- **Como é usado**:
+  - Carrega configurações de arquivo `.env`
+  - Configura tokens do Telegram
+  - Configura string de conexão do banco
+  - Configura IDs de chat
+- **Exemplo prático**: `load_dotenv()` carrega `TELEGRAM_BOT_TOKEN`
+
+### requests
+**Função**: Cliente HTTP para integrações externas
+- **Onde é usado**: `alerta_controller.py`, `telegram_scheduler.py`, `telegram_webhook.py`
+- **Como é usado**:
+  - Envio de mensagens para API do Telegram
+  - Recebimento de webhooks
+  - Chamadas HTTP para APIs externas
+- **Exemplo prático**: `requests.post(f'{TELEGRAM_API_URL}/sendMessage', data=payload)`
+
+### pytz
+**Função**: Manipulação de fusos horários
+- **Onde é usado**: `alerta_controller.py`, `telegram_webhook.py`
+- **Como é usado**:
+  - Conversão de UTC para horário de Brasília
+  - Validação de previsões de horário
+  - Armazenamento de timestamps corretos
+- **Exemplo prático**: `pytz.timezone('America/Sao_Paulo')` define fuso brasileiro
+
+### HTML5/CSS3/JavaScript
+**Função**: Interface web do usuário
+- **Onde é usado**: `decision-tree-automation-ui/index.html`
+- **Como é usado**:
+  - Formulários para cadastro de alertas e líderes
+  - Tabelas para visualização de categorias
+  - Consumo da API via Fetch
+  - Atualização automática de dados
+- **Exemplo prático**: `fetch('/alertas')` consome endpoint para listar alertas
 
 ---
 
-## Estrutura de Pastas e Arquivos
+## Razões das Escolhas Tecnológicas
 
-### Backend (`decision-tree-automation-api/backend/`)
+### Python 3.8+
+**Por que escolhemos**:
+- **Maturidade**: Linguagem estável e amplamente testada
+- **Ecossistema**: Vastas bibliotecas para web, banco de dados e integrações
+- **Produtividade**: Sintaxe clara e desenvolvimento rápido
+- **Comunidade**: Grande suporte e documentação disponível
 
-- **main.py**  
-  Ponto de entrada da aplicação FastAPI. Inicializa o app, configura CORS, inclui rotas e serve o frontend.
+### FastAPI
+**Por que escolhemos**:
+- **Performance**: Um dos frameworks Python mais rápidos
+- **Tipagem**: Validação automática de dados com Pydantic
+- **Documentação**: Gera automaticamente documentação da API
+- **Modernidade**: Suporte nativo a async/await
+- **Simplicidade**: Curva de aprendizado baixa
 
-- **config.py**  
-  Carrega variáveis de ambiente e configurações globais (ex: tokens do Telegram, IDs de chat).
+### Uvicorn
+**Por que escolhemos**:
+- **Compatibilidade**: Servidor oficial recomendado para FastAPI
+- **Performance**: Implementação ASGI otimizada
+- **Configuração**: Fácil configuração para desenvolvimento e produção
+- **Estabilidade**: Amplamente testado em produção
 
-- **controllers/**  
-  - `alerta_controller.py`: Gerencia criação, atualização e listagem de alertas, além de integração com o Telegram.
-  - `lider_controller.py`: CRUD de líderes (usuários responsáveis por responder alertas).
-  - `telegram_scheduler.py`: Funções para envio automático de mensagens e agendamento.
-  - `telegram_webhook.py`: Recebe e processa respostas enviadas ao bot do Telegram.
+### SQLAlchemy
+**Por que escolhemos**:
+- **Flexibilidade**: Suporte a múltiplos bancos de dados
+- **Abstração**: Não trava o projeto em um banco específico
+- **Produtividade**: ORM reduz código boilerplate
+- **Segurança**: Proteção contra SQL injection
+- **Migração**: Facilita mudanças no esquema do banco
 
-- **models/**  
-  - `alerta_model.py`: Define a estrutura da tabela de alertas.
-  - `lider_model.py`: Define a estrutura da tabela de líderes.
-  - `responses_model.py`: Define respostas, estado de usuários e inicialização do banco.
+### PostgreSQL
+**Por que escolhemos**:
+- **Confiabilidade**: Banco robusto e testado em produção
+- **Recursos**: Suporte a JSON, transações, constraints
+- **Performance**: Excelente para aplicações web
+- **Comunidade**: Grande suporte e documentação
+- **Compatibilidade**: Funciona bem com SQLAlchemy
 
-- **views/**  
-  - `api_router.py`: Define as rotas da API (endpoints REST).
-  - `__init__.py`: Inicializa o módulo de views.
+### psycopg2-binary
+**Por que escolhemos**:
+- **Padrão**: Driver mais usado para Python + PostgreSQL
+- **Performance**: Implementação otimizada em C
+- **Estabilidade**: Amplamente testado em produção
+- **Compatibilidade**: Funciona perfeitamente com SQLAlchemy
 
-- **__init__.py**  
-  Inicializa o pacote backend.
+### python-dotenv
+**Por que escolhemos**:
+- **Segurança**: Separa configurações sensíveis do código
+- **Flexibilidade**: Fácil mudança entre ambientes
+- **Padrão**: Prática comum em projetos Python
+- **Simplicidade**: API simples e intuitiva
 
-### Frontend (`decision-tree-automation-ui/`)
+### requests
+**Por que escolhemos**:
+- **Simplicidade**: API muito fácil de usar
+- **Confiabilidade**: Biblioteca estável e bem mantida
+- **Compatibilidade**: Funciona bem com APIs REST
+- **Documentação**: Excelente documentação e exemplos
 
-- **index.html**  
-  Interface web para cadastro de alertas, visualização de categorias (pendentes, escaladas, atrasadas, encerradas) e gestão de líderes.  
-  Consome a API do backend diretamente via JavaScript.
+### pytz
+**Por que escolhemos**:
+- **Precisão**: Implementação correta de fusos horários
+- **Padrão**: Biblioteca padrão para timezone em Python
+- **Compatibilidade**: Funciona bem com datetime
+- **Manutenção**: Atualizações regulares para mudanças de DST
 
-### Outros Arquivos
-
-- **requirements.txt**  
-  Lista todas as dependências Python do backend.
-
-- **render.yaml**  
-  Configuração para deploy automatizado na plataforma Render.
-
-- **start.sh**  
-  Script de inicialização do backend (usado em produção/deploy).
+### HTML5/CSS3/JavaScript (Vanilla)
+**Por que escolhemos**:
+- **Simplicidade**: Sem dependências externas
+- **Performance**: Carregamento rápido
+- **Manutenção**: Fácil de entender e modificar
+- **Compatibilidade**: Funciona em qualquer navegador moderno
+- **Integração**: Consome APIs REST diretamente
 
 ---
 
-## Passo a Passo para Rodar a Aplicação
+## Fluxo Principal da Aplicação
 
-### 1. Clone o repositório
+1. **Criação de Alerta**: Frontend → Controller → Model → Database
+2. **Envio ao Telegram**: Controller → Telegram API (via requests)
+3. **Resposta do Líder**: Telegram → Webhook → Controller → Model
+4. **Atualização de Status**: Model → Database → Frontend (via API)
 
-```sh
+---
+
+## Como Executar
+
+```bash
+# 1. Clone o repositório
 git clone <url-do-repositorio>
 cd decision-tree-automation/decision-tree-automation-api
-```
 
-### 2. Instale as dependências
-
-```sh
+# 2. Instale dependências
 pip install -r requirements.txt
-```
 
-### 3. Configure as variáveis de ambiente
+# 3. Configure variáveis de ambiente
+# Crie arquivo .env com:
+# DATABASE_URL=postgresql://usuario:senha@host:porta/banco
+# TELEGRAM_BOT_TOKEN=seu_token_do_telegram
+# CHAT_IDS=123456789,987654321
 
-Crie um arquivo `.env` na pasta `decision-tree-automation-api` com o seguinte formato:
-
-```
-DATABASE_URL=postgresql://usuario:senha@host:porta/banco
-TELEGRAM_BOT_TOKEN=seu_token_do_telegram
-CHAT_IDS=123456789,987654321
-```
-
-### 4. Inicie o backend
-
-```sh
+# 4. Execute o backend
 uvicorn backend.main:app --reload
+
+# 5. Abra o frontend
+# Abra decision-tree-automation-ui/index.html no navegador
 ```
 
-O backend estará disponível em `http://localhost:8000`.
+---
 
-### 5. Inicie o frontend
+## Estrutura de Dados
 
-Abra o arquivo `decision-tree-automation-ui/index.html` no navegador.
+### Alertas
+- **Status**: pendente, escalada, atrasada, encerrada
+- **Campos**: id, chat_id, problema, previsao, status, nome_lider, timestamps
+
+### Líderes
+- **Campos**: id, nome_lider, chat_id
+
+### Respostas
+- **Campos**: id, user_id, pergunta, resposta, timestamp
 
 ---
 
-## O que cada pasta/arquivo faz
+## Integrações
 
-- **decision-tree-automation-api/backend/main.py**: Inicializa o backend, configura rotas e serve o frontend.
-- **decision-tree-automation-api/backend/config.py**: Gerencia variáveis de ambiente e configurações globais.
-- **decision-tree-automation-api/backend/controllers/**: Lógica de negócio, integrações e endpoints principais.
-- **decision-tree-automation-api/backend/models/**: Modelos de dados e inicialização do banco.
-- **decision-tree-automation-api/backend/views/**: Roteamento e organização dos endpoints da API.
-- **decision-tree-automation-ui/index.html**: Interface web para interação com o sistema.
-- **requirements.txt**: Dependências do backend.
-- **render.yaml**: Configuração de deploy na Render.
-- **start.sh**: Script de inicialização para produção.
+### Telegram Bot API
+- **Webhook**: `/webhook/telegram` recebe mensagens
+- **Envio**: POST para `https://api.telegram.org/bot{token}/sendMessage`
+- **Formato**: Respostas devem ser no formato HH:MM
 
----
-
-Se precisar de mais detalhes ou quiser incluir as funcionalidades, é só pedir! 
+### Banco de Dados
+- **Tipo**: PostgreSQL
+- **ORM**: SQLAlchemy
+- **Migração**: Automática na inicialização
 
 ---
 
-## Arquivos-Chave e Funções no Fluxo Central
+## Deploy
 
-| Arquivo/Função                                         | Papel no fluxo central                                                                 |
-|--------------------------------------------------------|---------------------------------------------------------------------------------------|
-| backend/controllers/alerta_controller.py               | Criação, atualização, listagem e categorização dos alertas; envio ao Telegram         |
-| backend/controllers/telegram_webhook.py                | Recebe e processa respostas do Telegram                                               |
-| backend/controllers/telegram_scheduler.py              | Funções auxiliares para envio de mensagens                                            |
-| backend/models/alerta_model.py                         | Estrutura dos alertas                                                                 |
-| backend/models/lider_model.py                          | Estrutura dos líderes                                                                 |
-| backend/models/responses_model.py                      | Estrutura das respostas e estado do usuário                                           |
-| backend/config.py                                      | Configuração de tokens, chat_ids, variáveis de ambiente                               |
-| backend/views/api_router.py                            | Roteamento dos endpoints REST                                                         |
-| decision-tree-automation-ui/index.html                 | Interface web para cadastro, visualização e acompanhamento dos alertas                |
+### Render
+- **Configuração**: `render.yaml`
+- **Comando**: `bash start.sh`
+- **Variáveis**: Configuradas no painel do Render
 
 ---
-
-## Por que essas escolhas?
-
-- **FastAPI + Uvicorn:** Modernos, rápidos, fáceis de manter e com excelente suporte a APIs REST.
-- **SQLAlchemy:** Abstrai o banco, facilita manutenção e portabilidade.
-- **PostgreSQL:** Robusto, seguro e padrão para aplicações críticas.
-- **requests:** Simples e eficiente para integrações HTTP.
-- **Telegram Bot API:** Canal oficial, seguro e documentado para automação de mensagens.
-- **HTML/JS puro:** Interface leve, sem dependências pesadas, fácil de customizar. 
