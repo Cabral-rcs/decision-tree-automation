@@ -46,6 +46,7 @@ def criar_alerta(alerta: dict):
             justificativa=None,  # Campo não preenchido automaticamente
             prazo=None  # Campo preenchido pelo líder via Telegram
         )
+        logger.info(f"Criando alerta: problema={alerta['problema']}, status_operacao=não operando, prazo=None")
         db.add(novo_alerta)
         db.commit()
         db.refresh(novo_alerta)
@@ -122,10 +123,15 @@ def listar_alertas():
         atrasadas = []
         encerradas = []
         
+        logger.info(f"Listando alertas - horário atual: {now}")
+        
         for alerta in db.query(Alerta).order_by(Alerta.criado_em.desc()).all():
+            logger.info(f"Processando alerta ID {alerta.id}: prazo={alerta.prazo}, status_operacao={alerta.status_operacao}")
+            
             # Aguardando Previsão: Sem prazo respondido pelo líder
             if not alerta.prazo:
                 pendentes.append(alerta)
+                logger.info(f"Alerta {alerta.id} adicionado aos pendentes")
                 continue
             
             # Se tem prazo, verifica as outras categorias
@@ -133,17 +139,21 @@ def listar_alertas():
                 # Encerradas: Prazo não excedido e status operando
                 if alerta.prazo >= now:
                     encerradas.append(alerta)
+                    logger.info(f"Alerta {alerta.id} adicionado aos encerrados")
                 else:
                     # Atrasadas: Prazo excedido mas status operando (caso raro)
                     atrasadas.append(alerta)
+                    logger.info(f"Alerta {alerta.id} adicionado aos atrasados (operando mas prazo excedido)")
             else:
                 # Status não operando
                 if alerta.prazo >= now:
                     # Escaladas: Prazo respondido, atual dentro do prazo e status não operando
                     escaladas.append(alerta)
+                    logger.info(f"Alerta {alerta.id} adicionado aos escalados")
                 else:
                     # Atrasadas: Prazo excedido e status não operando
                     atrasadas.append(alerta)
+                    logger.info(f"Alerta {alerta.id} adicionado aos atrasados")
         
         return {
             "pendentes": [
