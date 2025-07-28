@@ -360,3 +360,221 @@ uvicorn backend.main:app --reload
 - **Variáveis**: Configuradas no painel do Render
 
 ---
+
+
+
+## Fluxograma Completo do Sistema
+
+```
+┌─────────────────────────────────────────────────────────────────────────────────────────────┐
+│                                    FLUXO COMPLETO DO SISTEMA                                │
+└─────────────────────────────────────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────────────────────────────────┐
+│  STEP 1: CRIAÇÃO DE ALERTA                                                                │
+│  ┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐ │
+│  │   Frontend      │    │   FastAPI       │    │   SQLAlchemy    │    │   PostgreSQL    │ │
+│  │   (HTML/JS)     │───▶│   (Controller)  │───▶│   (Model)       │───▶│   (Database)    │ │
+│  │                 │    │                 │    │                 │    │                 │ │
+│  │ • Formulário    │    │ • Validação     │    │ • Criação       │    │ • Persistência  │ │
+│  │ • Fetch API     │    │ • Lógica        │    │ • Estrutura     │    │ • Tabela        │ │
+│  │ • JavaScript    │    │ • Endpoint      │    │ • Relacionamento│    │ • Constraints   │ │
+│  └─────────────────┘    └─────────────────┘    └─────────────────┘    └─────────────────┘ │
+│  Tecnologias: HTML5, CSS3, JavaScript (ES6+), FastAPI, SQLAlchemy, PostgreSQL            │
+└─────────────────────────────────────────────────────────────────────────────────────────────┘
+                                        │
+                                        ▼
+┌─────────────────────────────────────────────────────────────────────────────────────────────┐
+│  STEP 2: ALERTA CRIADO EM "AGUARDANDO PREVISÃO"                                          │
+│  ┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐ │
+│  │   PostgreSQL    │    │   SQLAlchemy    │    │   FastAPI       │    │   Frontend      │ │
+│  │   (Database)    │───▶│   (Model)       │───▶│   (Controller)  │───▶│   (HTML/JS)     │ │
+│  │                 │    │                 │    │                 │    │                 │ │
+│  │ • Status:       │    │ • Query         │    │ • Listagem      │    │ • Tabela        │ │
+│  │   "pendente"    │    │ • Filtro        │    │ • Categorização │    │ • Atualização   │ │
+│  │ • Timestamp     │    │ • Serialização  │    │ • Endpoint      │    │ • JavaScript    │ │
+│  └─────────────────┘    └─────────────────┘    └─────────────────┘    └─────────────────┘ │
+│  Tecnologias: PostgreSQL, SQLAlchemy, FastAPI, HTML5, CSS3, JavaScript                   │
+└─────────────────────────────────────────────────────────────────────────────────────────────┘
+                                        │
+                                        ▼
+┌─────────────────────────────────────────────────────────────────────────────────────────────┐
+│  STEP 3: ENVIO DE MENSAGEM AO TELEGRAM                                                    │
+│  ┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐ │
+│  │   FastAPI       │    │   requests      │    │   python-dotenv │    │   Telegram      │ │
+│  │   (Controller)  │───▶│   (HTTP Client) │───▶│   (Config)      │───▶│   Bot API       │ │
+│  │                 │    │                 │    │                 │    │                 │ │
+│  │ • Lógica        │    │ • POST Request  │    │ • Token         │    │ • Webhook       │ │
+│  │ • Payload       │    │ • Headers       │    │ • Chat IDs      │    │ • Message       │ │
+│  │ • Validação     │    │ • JSON Data     │    │ • Environment   │    │ • Delivery      │ │
+│  └─────────────────┘    └─────────────────┘    └─────────────────┘    └─────────────────┘ │
+│  Tecnologias: FastAPI, requests, python-dotenv, Telegram Bot API                          │
+└─────────────────────────────────────────────────────────────────────────────────────────────┘
+                                        │
+                                        ▼
+┌─────────────────────────────────────────────────────────────────────────────────────────────┐
+│  STEP 4: LÍDER RECEBE MENSAGEM NO TELEGRAM                                                │
+│  ┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐ │
+│  │   Telegram      │    │   Telegram      │    │   Telegram      │    │   Telegram      │ │
+│  │   Bot API       │───▶│   App           │───▶│   User          │───▶│   Interface     │ │
+│  │                 │    │                 │    │                 │    │                 │ │
+│  │ • Message       │    │ • Notification  │    │ • Reading       │    │ • Response      │ │
+│  │ • Delivery      │    │ • Alert         │    │ • Analysis      │    │ • Input         │ │
+│  │ • Status        │    │ • Sound         │    │ • Decision      │    │ • Send          │ │
+│  └─────────────────┘    └─────────────────┘    └─────────────────┘    └─────────────────┘ │
+│  Tecnologias: Telegram Bot API, Telegram App, Telegram Interface                          │
+└─────────────────────────────────────────────────────────────────────────────────────────────┘
+                                        │
+                                        ▼
+┌─────────────────────────────────────────────────────────────────────────────────────────────┐
+│  STEP 5: LÍDER RESPONDE COM PREVISÃO (HH:MM)                                              │
+│  ┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐ │
+│  │   Telegram      │    │   Telegram      │    │   Telegram      │    │   Telegram      │ │
+│  │   Interface     │───▶│   App           │───▶│   Bot API       │───▶│   Webhook       │ │
+│  │                 │    │                 │    │                 │    │                 │ │
+│  │ • Text Input    │    │ • Message       │    │ • Update        │    │ • HTTP POST     │ │
+│  │ • Send Button   │    │ • Transmission  │    │ • Processing    │    │ • Payload       │ │
+│  │ • Validation    │    │ • Encryption    │    │ • Routing       │    │ • Endpoint      │ │
+│  └─────────────────┘    └─────────────────┘    └─────────────────┘    └─────────────────┘ │
+│  Tecnologias: Telegram Interface, Telegram App, Telegram Bot API, HTTP Webhook            │
+└─────────────────────────────────────────────────────────────────────────────────────────────┘
+                                        │
+                                        ▼
+┌─────────────────────────────────────────────────────────────────────────────────────────────┐
+│  STEP 6: WEBHOOK RECEBE RESPOSTA                                                           │
+│  ┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐ │
+│  │   Telegram      │    │   FastAPI       │    │   pytz          │    │   Python        │ │
+│  │   Webhook       │───▶│   (Webhook)     │───▶│   (Timezone)    │───▶│   (Validation)  │ │
+│  │                 │    │                 │    │                 │    │                 │ │
+│  │ • HTTP POST     │    │ • Endpoint      │    │ • UTC to        │    │ • Time Format   │ │
+│  │ • JSON Data     │    │ • JSON Parse    │    │   Brasília      │    │ • HH:MM Check   │ │
+│  │ • User Info     │    │ • User ID       │    │ • Conversion    │    │ • Validation    │ │
+│  └─────────────────┘    └─────────────────┘    └─────────────────┘    └─────────────────┘ │
+│  Tecnologias: HTTP Webhook, FastAPI, pytz, Python 3.8+                                     │
+└─────────────────────────────────────────────────────────────────────────────────────────────┘
+                                        │
+                                        ▼
+┌─────────────────────────────────────────────────────────────────────────────────────────────┐
+│  STEP 7: VALIDAÇÃO E PROCESSAMENTO DA RESPOSTA                                             │
+│  ┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐ │
+│  │   Python        │    │   SQLAlchemy    │    │   PostgreSQL    │    │   FastAPI        │ │
+│  │   (Logic)       │───▶│   (Model)       │───▶│   (Database)    │───▶│   (Controller)   │ │
+│  │                 │    │                 │    │                 │    │                 │ │
+│  │ • Time Parse    │    │ • Update Alert  │    │ • Save Response │    │ • Status Update  │ │
+│  │ • Format Check  │    │ • Save Response │    │ • Update Alert  │    │ • Logic          │ │
+│  │ • Validation    │    │ • Relationship  │    │ • Transaction   │    │ • Categorization │ │
+│  └─────────────────┘    └─────────────────┘    └─────────────────┘    └─────────────────┘ │
+│  Tecnologias: Python 3.8+, SQLAlchemy, PostgreSQL, FastAPI                                │
+└─────────────────────────────────────────────────────────────────────────────────────────────┘
+                                        │
+                                        ▼
+┌─────────────────────────────────────────────────────────────────────────────────────────────┐
+│  STEP 8: ATUALIZAÇÃO DE STATUS DO ALERTA                                                   │
+│  ┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐ │
+│  │   PostgreSQL    │    │   SQLAlchemy    │    │   FastAPI       │    │   Frontend      │ │
+│  │   (Database)    │───▶│   (Model)       │───▶│   (Controller)  │───▶│   (HTML/JS)     │ │
+│  │                 │    │                 │    │                 │    │                 │ │
+│  │ • Status Update │    │ • Query         │    │ • Listagem      │    │ • Tabela        │ │
+│  │ • Previsão      │    │ • Filtro        │    │ • Categorização │    │ • Atualização   │ │
+│  │ • Timestamp     │    │ • Serialização  │    │ • Endpoint      │    │ • JavaScript    │ │
+│  └─────────────────┘    └─────────────────┘    └─────────────────┘    └─────────────────┘ │
+│  Tecnologias: PostgreSQL, SQLAlchemy, FastAPI, HTML5, CSS3, JavaScript                   │
+└─────────────────────────────────────────────────────────────────────────────────────────────┘
+                                        │
+                                        ▼
+┌─────────────────────────────────────────────────────────────────────────────────────────────┐
+│  STEP 9: CATEGORIZAÇÃO AUTOMÁTICA DO ALERTA                                                │
+│  ┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐ │
+│  │   Python        │    │   pytz          │    │   SQLAlchemy    │    │   PostgreSQL    │ │
+│  │   (Logic)       │───▶│   (Timezone)    │───▶│   (Model)       │───▶│   (Database)    │ │
+│  │                 │    │                 │    │                 │    │                 │ │
+│  │ • Time Compare  │    │ • Current Time  │    │ • Status Update │    │ • Save Status   │ │
+│  │ • Business      │    │ • Brasília      │    │ • Category      │    │ • Transaction   │ │
+│  │   Rules         │    │ • Conversion    │    │ • Logic         │    │ • Persistence   │ │
+│  └─────────────────┘    └─────────────────┘    └─────────────────┘    └─────────────────┘ │
+│  Tecnologias: Python 3.8+, pytz, SQLAlchemy, PostgreSQL                                   │
+└─────────────────────────────────────────────────────────────────────────────────────────────┘
+                                        │
+                                        ▼
+┌─────────────────────────────────────────────────────────────────────────────────────────────┐
+│  STEP 10: ATUALIZAÇÃO DA INTERFACE FRONTEND                                                │
+│  ┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐ │
+│  │   PostgreSQL    │    │   SQLAlchemy    │    │   FastAPI       │    │   Frontend      │ │
+│  │   (Database)    │───▶│   (Model)       │───▶│   (Controller)  │───▶│   (HTML/JS)     │ │
+│  │                 │    │                 │    │                 │    │                 │ │
+│  │ • Data Query    │    │ • Fetch Data    │    │ • API Response  │    │ • DOM Update    │ │
+│  │ • Categories    │    │ • Serialize     │    │ • JSON Format   │    │ • Table Refresh │ │
+│  │ • Status Info   │    │ • Filter        │    │ • HTTP Response │    │ • JavaScript    │ │
+│  └─────────────────┘    └─────────────────┘    └─────────────────┘    └─────────────────┘ │
+│  Tecnologias: PostgreSQL, SQLAlchemy, FastAPI, HTML5, CSS3, JavaScript                   │
+└─────────────────────────────────────────────────────────────────────────────────────────────┘
+                                        │
+                                        ▼
+┌─────────────────────────────────────────────────────────────────────────────────────────────┐
+│  STEP 11: VISUALIZAÇÃO DAS CATEGORIAS NO FRONTEND                                          │
+│  ┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐ │
+│  │   JavaScript    │    │   HTML5         │    │   CSS3          │    │   Browser       │ │
+│  │   (Logic)       │───▶│   (Structure)   │───▶│   (Styling)     │───▶│   (Rendering)   │ │
+│  │                 │    │                 │    │                 │    │                 │ │
+│  │ • Data Process  │    │ • Table         │    │ • Colors        │    │ • Display       │ │
+│  │ • Category      │    │ • Structure     │    │ • Layout        │    │ • User          │ │
+│  │   Logic         │    │ • Elements      │    │ • Responsive    │    │   Interface     │ │
+│  └─────────────────┘    └─────────────────┘    └─────────────────┘    └─────────────────┘ │
+│  Tecnologias: JavaScript (ES6+), HTML5, CSS3, Browser Engine                              │
+└─────────────────────────────────────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────────────────────────────────┐
+│                                    CATEGORIAS FINAIS                                        │
+│  ┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐ │
+│  │   Pendentes     │    │   Escaladas     │    │   Atrasadas     │    │   Encerradas    │ │
+│  │                 │    │                 │    │                 │    │                 │ │
+│  │ • Aguardando    │    │ • Previsão      │    │ • Previsão      │    │ • Resolvidas    │ │
+│  │   Previsão      │    │   Excedida      │    │   Excedida      │    │ • Finalizadas   │ │
+│  │ • Sem Resposta  │    │ • Escalação     │    │ • Sem Ação      │    │ • Concluídas    │ │
+│  └─────────────────┘    └─────────────────┘    └─────────────────┘    └─────────────────┘ │
+└─────────────────────────────────────────────────────────────────────────────────────────────┘
+```
+
+### **Resumo das Tecnologias por Etapa:**
+
+#### **Step 1 - Criação de Alerta**
+- **Frontend**: HTML5, CSS3, JavaScript (ES6+)
+- **Backend**: FastAPI, SQLAlchemy, PostgreSQL
+
+#### **Step 2 - Alerta em "Aguardando Previsão"**
+- **Database**: PostgreSQL, SQLAlchemy
+- **API**: FastAPI
+- **Frontend**: HTML5, CSS3, JavaScript
+
+#### **Step 3 - Envio ao Telegram**
+- **Backend**: FastAPI, requests, python-dotenv
+- **External**: Telegram Bot API
+
+#### **Step 4 - Recebimento no Telegram**
+- **External**: Telegram Bot API, Telegram App, Telegram Interface
+
+#### **Step 5 - Resposta do Líder**
+- **External**: Telegram Interface, Telegram App, Telegram Bot API, HTTP Webhook
+
+#### **Step 6 - Processamento do Webhook**
+- **Backend**: FastAPI, pytz, Python 3.8+
+- **External**: HTTP Webhook
+
+#### **Step 7 - Validação e Processamento**
+- **Backend**: Python 3.8+, SQLAlchemy, PostgreSQL, FastAPI
+
+#### **Step 8 - Atualização de Status**
+- **Database**: PostgreSQL, SQLAlchemy
+- **API**: FastAPI
+- **Frontend**: HTML5, CSS3, JavaScript
+
+#### **Step 9 - Categorização Automática**
+- **Backend**: Python 3.8+, pytz, SQLAlchemy, PostgreSQL
+
+#### **Step 10 - Atualização Frontend**
+- **Database**: PostgreSQL, SQLAlchemy
+- **API**: FastAPI
+- **Frontend**: HTML5, CSS3, JavaScript
+
+#### **Step 11 - Visualização Final**
+- **Frontend**: JavaScript (ES6+), HTML5, CSS3, Browser Engine
