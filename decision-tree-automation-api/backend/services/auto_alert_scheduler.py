@@ -86,10 +86,23 @@ class AutoAlertScheduler:
             # Gera dados mockados
             alert_data = MockDataGenerator.generate_alert_data()
             
-            # Cria o alerta
+            # Cria o alerta com todos os dados
             alerta_dict = {
                 "nome_lider": alert_data["nome_lider"],
-                "problema": f"[AUTO] {alert_data['equipamento']} - {alert_data['operacao']} - {alert_data['justificativa']}"
+                "problema": f"[AUTO] {alert_data['equipamento']} - {alert_data['operacao']} - {alert_data['justificativa']}",
+                "codigo": alert_data["codigo"],
+                "unidade": alert_data["unidade"],
+                "frente": alert_data["frente"],
+                "equipamento": alert_data["equipamento"],
+                "codigo_equipamento": alert_data["codigo_equipamento"],
+                "tipo_operacao": alert_data["tipo_operacao"],
+                "operacao": alert_data["operacao"],
+                "nome_operador": alert_data["nome_operador"],
+                "data_operacao": alert_data["data_operacao"],
+                "tempo_abertura": alert_data["tempo_abertura"],
+                "tipo_arvore": alert_data["tipo_arvore"],
+                "justificativa": alert_data["justificativa"],
+                "prazo": alert_data["prazo"]
             }
             
             result = criar_alerta(alerta_dict)

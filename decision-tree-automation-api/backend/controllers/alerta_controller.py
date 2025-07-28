@@ -18,11 +18,27 @@ def criar_alerta(alerta: dict):
         lider = db.query(Lider).filter(Lider.nome_lider == alerta['nome_lider']).first()
         if not lider:
             raise HTTPException(status_code=404, detail='Líder não encontrado')
+        
+        # Criar alerta com todos os campos disponíveis
         novo_alerta = Alerta(
             chat_id=lider.chat_id,
             problema=alerta['problema'],
             status='pendente',
-            nome_lider=lider.nome_lider
+            nome_lider=lider.nome_lider,
+            # Novos campos se disponíveis
+            codigo=alerta.get('codigo'),
+            unidade=alerta.get('unidade'),
+            frente=alerta.get('frente'),
+            equipamento=alerta.get('equipamento'),
+            codigo_equipamento=alerta.get('codigo_equipamento'),
+            tipo_operacao=alerta.get('tipo_operacao'),
+            operacao=alerta.get('operacao'),
+            nome_operador=alerta.get('nome_operador'),
+            data_operacao=alerta.get('data_operacao'),
+            tempo_abertura=alerta.get('tempo_abertura'),
+            tipo_arvore=alerta.get('tipo_arvore'),
+            justificativa=alerta.get('justificativa'),
+            prazo=alerta.get('prazo')
         )
         db.add(novo_alerta)
         db.commit()
@@ -95,16 +111,47 @@ def listar_alertas():
                 escaladas.append(alerta)
         return {
             "pendentes": [
-                {"id": a.id, "chat_id": a.chat_id, "problema": a.problema, "criado_em": a.criado_em, "nome_lider": a.nome_lider} for a in pendentes
+                {
+                    "id": a.id, "chat_id": a.chat_id, "problema": a.problema, "criado_em": a.criado_em, 
+                    "nome_lider": a.nome_lider, "codigo": a.codigo, "unidade": a.unidade, "frente": a.frente,
+                    "equipamento": a.equipamento, "codigo_equipamento": a.codigo_equipamento, "tipo_operacao": a.tipo_operacao,
+                    "operacao": a.operacao, "nome_operador": a.nome_operador, "data_operacao": a.data_operacao,
+                    "tempo_abertura": a.tempo_abertura, "tipo_arvore": a.tipo_arvore, "justificativa": a.justificativa,
+                    "prazo": a.prazo
+                } for a in pendentes
             ],
             "escaladas": [
-                {"id": a.id, "chat_id": a.chat_id, "problema": a.problema, "previsao": a.previsao, "previsao_datetime": a.previsao_datetime, "respondido_em": a.respondido_em, "nome_lider": a.nome_lider, "status_operacao": a.status_operacao} for a in escaladas
+                {
+                    "id": a.id, "chat_id": a.chat_id, "problema": a.problema, "previsao": a.previsao, 
+                    "previsao_datetime": a.previsao_datetime, "respondido_em": a.respondido_em, "nome_lider": a.nome_lider, 
+                    "status_operacao": a.status_operacao, "codigo": a.codigo, "unidade": a.unidade, "frente": a.frente,
+                    "equipamento": a.equipamento, "codigo_equipamento": a.codigo_equipamento, "tipo_operacao": a.tipo_operacao,
+                    "operacao": a.operacao, "nome_operador": a.nome_operador, "data_operacao": a.data_operacao,
+                    "tempo_abertura": a.tempo_abertura, "tipo_arvore": a.tipo_arvore, "justificativa": a.justificativa,
+                    "prazo": a.prazo
+                } for a in escaladas
             ],
             "atrasadas": [
-                {"id": a.id, "chat_id": a.chat_id, "problema": a.problema, "previsao": a.previsao, "previsao_datetime": a.previsao_datetime, "respondido_em": a.respondido_em, "nome_lider": a.nome_lider, "status_operacao": a.status_operacao} for a in atrasadas
+                {
+                    "id": a.id, "chat_id": a.chat_id, "problema": a.problema, "previsao": a.previsao, 
+                    "previsao_datetime": a.previsao_datetime, "respondido_em": a.respondido_em, "nome_lider": a.nome_lider, 
+                    "status_operacao": a.status_operacao, "codigo": a.codigo, "unidade": a.unidade, "frente": a.frente,
+                    "equipamento": a.equipamento, "codigo_equipamento": a.codigo_equipamento, "tipo_operacao": a.tipo_operacao,
+                    "operacao": a.operacao, "nome_operador": a.nome_operador, "data_operacao": a.data_operacao,
+                    "tempo_abertura": a.tempo_abertura, "tipo_arvore": a.tipo_arvore, "justificativa": a.justificativa,
+                    "prazo": a.prazo
+                } for a in atrasadas
             ],
             "encerradas": [
-                {"id": a.id, "chat_id": a.chat_id, "problema": a.problema, "previsao": a.previsao, "previsao_datetime": a.previsao_datetime, "respondido_em": a.respondido_em, "nome_lider": a.nome_lider, "status_operacao": a.status_operacao, "horario_operando": a.horario_operando} for a in encerradas
+                {
+                    "id": a.id, "chat_id": a.chat_id, "problema": a.problema, "previsao": a.previsao, 
+                    "previsao_datetime": a.previsao_datetime, "respondido_em": a.respondido_em, "nome_lider": a.nome_lider, 
+                    "status_operacao": a.status_operacao, "horario_operando": a.horario_operando, "codigo": a.codigo, 
+                    "unidade": a.unidade, "frente": a.frente, "equipamento": a.equipamento, "codigo_equipamento": a.codigo_equipamento, 
+                    "tipo_operacao": a.tipo_operacao, "operacao": a.operacao, "nome_operador": a.nome_operador, 
+                    "data_operacao": a.data_operacao, "tempo_abertura": a.tempo_abertura, "tipo_arvore": a.tipo_arvore, 
+                    "justificativa": a.justificativa, "prazo": a.prazo
+                } for a in encerradas
             ]
         }
     finally:

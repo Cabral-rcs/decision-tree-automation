@@ -623,3 +623,70 @@ Os alertas automáticos incluem:
 
 #### **Step 11 - Visualização Final**
 - **Frontend**: JavaScript (ES6+), HTML5, CSS3, Browser Engine
+
+## Como Executar
+
+1. **Clone o repositório**:
+   ```bash
+   git clone <url-do-repositorio>
+   cd decision-tree-automation
+   ```
+
+2. **Configure as variáveis de ambiente**:
+   Crie um arquivo `.env` na pasta `decision-tree-automation-api` com:
+   ```
+   DATABASE_URL=postgresql://usuario:senha@localhost:5432/nome_do_banco
+   TELEGRAM_BOT_TOKEN=seu_token_do_bot
+   CHAT_IDS=123456789,987654321
+   ```
+
+3. **Instale as dependências**:
+   ```bash
+   cd decision-tree-automation-api
+   pip install -r requirements.txt
+   ```
+
+4. **Migre a base de dados** (IMPORTANTE):
+   ```bash
+   python migrate_database.py
+   ```
+
+5. **Execute o backend**:
+   ```bash
+   uvicorn backend.main:app --reload
+   ```
+
+6. **Abra o frontend**:
+   Abra o arquivo `decision-tree-automation-ui/index.html` no navegador.
+
+7. **Teste os alertas automáticos**:
+   ```bash
+   python test_auto_alert.py
+   ```
+
+## Funcionalidades dos Alertas Automáticos
+
+### Controles Disponíveis:
+- **Ativar/Desativar**: Botão para ligar/desligar a criação automática
+- **Criar Agora**: Botão para criar um alerta imediatamente (teste)
+- **Intervalo**: Configuração do tempo entre alertas (padrão: 3 minutos)
+
+### Dados Gerados Automaticamente:
+- **Código**: Número único do alerta
+- **Unidade**: Unidade operacional (Barra Bonita, Lençóis Paulista, etc.)
+- **Frente**: Frente de trabalho (Colheita, Plantio, Manutenção, etc.)
+- **Equipamento**: Nome e código do equipamento
+- **Tipo de Operação**: Categoria da operação
+- **Operação**: Operação específica
+- **Operador**: Nome do operador (sempre "Rafael Cabral")
+- **Data da Operação**: Data/hora da operação
+- **Tempo de Abertura**: Tempo desde a abertura
+- **Tipo da Árvore**: Tipo da árvore de decisão
+- **Justificativa**: Descrição do problema
+- **Prazo**: Prazo para resolução
+
+### Interface Atualizada:
+- Todas as categorias (Pendentes, Escaladas, Atrasadas, Encerradas) mostram os novos campos
+- Tabelas responsivas com scroll horizontal
+- Dados organizados cronologicamente
+- Status visual com cores diferenciadas
