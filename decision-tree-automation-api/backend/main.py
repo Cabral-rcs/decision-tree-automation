@@ -48,9 +48,6 @@ def enviar_primeira_pergunta():
     
     # Inicia o scheduler
     auto_alert_scheduler.start()
-    
-    # Agenda com intervalo padrão (será atualizado se houver configuração)
-    auto_alert_scheduler.schedule_auto_alert()
 
 # Comentário: O backend segue o padrão MVC, separando models, views e controllers.
 # O envio inicial de perguntas ocorre no evento de startup. 

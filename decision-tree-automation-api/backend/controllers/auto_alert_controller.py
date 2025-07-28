@@ -126,7 +126,7 @@ def update_interval(interval_minutes: int):
         db.refresh(config)
         
         # Atualiza o scheduler com o novo intervalo
-        auto_alert_scheduler.schedule_auto_alert_with_interval(interval_minutes)
+        auto_alert_scheduler.update_interval(interval_minutes)
         
         return {
             "interval_minutes": config.interval_minutes,

@@ -1,5 +1,6 @@
-import asyncio
 import logging
+import threading
+import time
 from datetime import datetime, timedelta
 from sqlalchemy.orm import Session
 from backend.models.responses_model import SessionLocal
@@ -7,65 +8,59 @@ from backend.models.auto_alert_config_model import AutoAlertConfig
 from backend.services.mock_data_generator import MockDataGenerator
 from backend.controllers.alerta_controller import criar_alerta
 from backend.controllers.auto_alert_controller import ensure_rafael_cabral_exists
-from apscheduler.schedulers.asyncio import AsyncIOScheduler
-from apscheduler.triggers.interval import IntervalTrigger
 
 logger = logging.getLogger(__name__)
 
 class AutoAlertScheduler:
-    """Scheduler para criação automática de alertas"""
+    """Scheduler para criação automática de alertas usando threading"""
     
     def __init__(self):
-        self.scheduler = AsyncIOScheduler()
         self.is_running = False
+        self.thread = None
+        self.interval_minutes = 3
+        self.stop_event = threading.Event()
     
     def start(self):
         """Inicia o scheduler"""
         if not self.is_running:
-            self.scheduler.start()
             self.is_running = True
+            self.stop_event.clear()
+            self.thread = threading.Thread(target=self._run_scheduler, daemon=True)
+            self.thread.start()
             logger.info("Auto Alert Scheduler iniciado")
     
     def stop(self):
         """Para o scheduler"""
         if self.is_running:
-            self.scheduler.shutdown()
             self.is_running = False
+            self.stop_event.set()
+            if self.thread:
+                self.thread.join(timeout=5)
             logger.info("Auto Alert Scheduler parado")
     
     def schedule_auto_alert(self):
-        """Agenda a criação automática de alertas"""
-        # Remove jobs existentes
-        self.scheduler.remove_all_jobs()
-        
-        # Adiciona novo job
-        self.scheduler.add_job(
-            self._create_auto_alert,
-            IntervalTrigger(minutes=3),
-            id='auto_alert_job',
-            name='Criação Automática de Alertas',
-            replace_existing=True
-        )
-        
+        """Agenda a criação automática de alertas com intervalo padrão"""
+        self.interval_minutes = 3
         logger.info("Job de criação automática de alertas agendado para cada 3 minutos")
     
     def schedule_auto_alert_with_interval(self, interval_minutes: int):
         """Agenda a criação automática de alertas com intervalo específico"""
-        # Remove jobs existentes
-        self.scheduler.remove_all_jobs()
-        
-        # Adiciona novo job
-        self.scheduler.add_job(
-            self._create_auto_alert,
-            IntervalTrigger(minutes=interval_minutes),
-            id='auto_alert_job',
-            name='Criação Automática de Alertas',
-            replace_existing=True
-        )
-        
+        self.interval_minutes = interval_minutes
         logger.info(f"Job de criação automática de alertas agendado para cada {interval_minutes} minutos")
     
-    async def _create_auto_alert(self):
+    def _run_scheduler(self):
+        """Executa o loop principal do scheduler"""
+        while self.is_running and not self.stop_event.is_set():
+            try:
+                self._create_auto_alert()
+                # Aguarda o intervalo especificado
+                self.stop_event.wait(timeout=self.interval_minutes * 60)
+            except Exception as e:
+                logger.error(f"Erro no scheduler: {str(e)}")
+                # Aguarda 1 minuto antes de tentar novamente
+                self.stop_event.wait(timeout=60)
+    
+    def _create_auto_alert(self):
         """Executa a criação automática de alertas"""
         db: Session = SessionLocal()
         try:
@@ -109,18 +104,7 @@ class AutoAlertScheduler:
     
     def update_interval(self, interval_minutes: int):
         """Atualiza o intervalo de criação de alertas"""
-        # Remove job existente
-        self.scheduler.remove_job('auto_alert_job')
-        
-        # Adiciona novo job com intervalo atualizado
-        self.scheduler.add_job(
-            self._create_auto_alert,
-            IntervalTrigger(minutes=interval_minutes),
-            id='auto_alert_job',
-            name='Criação Automática de Alertas',
-            replace_existing=True
-        )
-        
+        self.interval_minutes = interval_minutes
         logger.info(f"Intervalo de criação automática atualizado para {interval_minutes} minutos")
 
 # Instância global do scheduler
