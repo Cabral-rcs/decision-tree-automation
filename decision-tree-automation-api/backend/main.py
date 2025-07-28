@@ -214,12 +214,14 @@ def frontend_status():
         "paths_checked": [],
         "frontend_found": False,
         "frontend_path": None,
-        "frontend_size": None
+        "frontend_size": None,
+        "frontend_content_preview": None
     }
     
     for path in possible_paths:
         exists = os.path.exists(path)
         size = None
+        content_preview = None
         if exists:
             try:
                 size = os.path.getsize(path)
@@ -227,6 +229,17 @@ def frontend_status():
                     status["frontend_found"] = True
                     status["frontend_path"] = path
                     status["frontend_size"] = size
+                    
+                    # Lê uma amostra do conteúdo para verificar a versão
+                    with open(path, 'r', encoding='utf-8') as f:
+                        content = f.read()
+                        # Procura pela versão no conteúdo
+                        import re
+                        version_match = re.search(r'content="([^"]*version[^"]*)"', content)
+                        if version_match:
+                            status["frontend_content_preview"] = version_match.group(1)
+                        else:
+                            status["frontend_content_preview"] = "Versão não encontrada"
             except Exception as e:
                 size = f"Erro ao ler: {e}"
         
@@ -237,6 +250,30 @@ def frontend_status():
         })
     
     return status
+
+@app.get("/reload-frontend")
+def reload_frontend():
+    """Endpoint para forçar reload do frontend"""
+    import datetime
+    
+    # Força o reload retornando headers específicos
+    headers = {
+        "Cache-Control": "no-cache, no-store, must-revalidate, max-age=0",
+        "Pragma": "no-cache",
+        "Expires": "Thu, 01 Jan 1970 00:00:00 GMT",
+        "X-Frontend-Reload": "forced",
+        "X-Reload-Timestamp": datetime.datetime.now().isoformat()
+    }
+    
+    return {
+        "message": "Frontend reload forçado",
+        "timestamp": datetime.datetime.now().isoformat(),
+        "instructions": [
+            "1. Use Ctrl+F5 para forçar refresh do navegador",
+            "2. Ou acesse / para carregar a versão mais recente",
+            "3. Verifique /frontend-status para debug"
+        ]
+    }
 
 # Ao iniciar o sistema, envie a primeira pergunta para todos os usuários
 @app.on_event("startup")
