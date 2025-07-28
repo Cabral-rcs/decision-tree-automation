@@ -10,7 +10,6 @@ from backend.controllers.telegram_scheduler import enviar_pergunta_para_usuario
 import os
 import logging
 from backend.controllers.alerta_controller import router as alerta_router
-from backend.controllers.lider_controller import router as lider_router
 from backend.controllers.auto_alert_controller import router as auto_alert_router
 
 # Configuração de logging
@@ -31,7 +30,6 @@ app.add_middleware(
 # Inclui as rotas da API
 app.include_router(api_router)
 app.include_router(alerta_router)
-app.include_router(lider_router)
 app.include_router(auto_alert_router)
 
 @app.get("/", response_class=HTMLResponse)
