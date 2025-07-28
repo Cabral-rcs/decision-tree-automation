@@ -52,7 +52,7 @@ def criar_alerta(alerta: dict):
         
         # Envia mensagem ao líder no Telegram
         try:
-            mensagem = f"Novo alerta criado:\n\n{novo_alerta.problema}\n\nQual a previsão para resolução?\n(Responda apenas o horário no formato HH:MM)"
+            mensagem = f"Qual o prazo para {novo_alerta.operacao or 'resolução'} da máquina {novo_alerta.equipamento or 'equipamento'}?\n\n(Responda apenas o horário no formato HH:MM)"
             payload = {
                 'chat_id': novo_alerta.chat_id,
                 'text': mensagem

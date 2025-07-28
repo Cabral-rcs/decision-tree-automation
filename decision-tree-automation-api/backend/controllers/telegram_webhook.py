@@ -26,9 +26,9 @@ async def telegram_webhook(request: Request):
     resposta = message.get('text') or '[outro tipo de mensagem]'
     db = SessionLocal()
     try:
-        # Busca alerta pendente (sem prazo) para o líder
+        # Busca alerta pendente (sem prazo) para o líder Rafael Cabral
         alerta = db.query(Alerta).filter(
-            Alerta.nome_lider == nome_lider, 
+            Alerta.nome_lider == 'Rafael Cabral', 
             Alerta.prazo.is_(None)
         ).order_by(Alerta.criado_em.asc()).first()
         
@@ -62,7 +62,7 @@ async def telegram_webhook(request: Request):
             # Confirmação para o líder
             payload = {
                 'chat_id': user_id,
-                'text': f'Previsão registrada: {resposta}. O alerta será monitorado até este horário.'
+                'text': f'Prazo registrado: {resposta}. O alerta será monitorado até este horário.'
             }
             requests.post(f'{TELEGRAM_API_URL}/sendMessage', data=payload)
             

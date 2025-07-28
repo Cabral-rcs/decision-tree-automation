@@ -7,6 +7,8 @@ from backend.models.alerta_model import Alerta
 from backend.services.mock_data_generator import MockDataGenerator
 from datetime import datetime
 import logging
+import requests
+from backend.config import TELEGRAM_API_URL
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
@@ -124,6 +126,25 @@ def create_alert_now():
         db.add(novo_alerta)
         db.commit()
         db.refresh(novo_alerta)
+        
+        # Envia mensagem ao líder no Telegram
+        try:
+            mensagem = f"Qual o prazo para {novo_alerta.operacao} da máquina {novo_alerta.equipamento}?\n\n(Responda apenas o horário no formato HH:MM)"
+            payload = {
+                'chat_id': novo_alerta.chat_id,
+                'text': mensagem
+            }
+            resp = requests.post(f'{TELEGRAM_API_URL}/sendMessage', data=payload, timeout=10)
+            if resp.ok:
+                mensagem_id = resp.json().get('result', {}).get('message_id')
+                novo_alerta.mensagem_id = mensagem_id
+                db.commit()
+                logger.info(f"Mensagem enviada ao Telegram para chat_id {novo_alerta.chat_id}")
+            else:
+                logger.warning(f'Erro ao enviar mensagem ao Telegram: {resp.status_code} - {resp.text}')
+        except Exception as e:
+            logger.error(f'Erro ao enviar mensagem ao Telegram: {str(e)}')
+            # Continua mesmo se falhar o envio da mensagem
         
         logger.info(f"Alerta automático criado: ID {novo_alerta.id}")
         
