@@ -6,8 +6,8 @@
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate, max-age=0">
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="Thu, 01 Jan 1970 00:00:00 GMT">
-    <meta name="version" content="2024-12-19-16-30-00">
-    <meta name="build-timestamp" content="2024-12-19T16:30:00Z">
+    <meta name="version" content="2024-12-19-17-00-00">
+    <meta name="build-timestamp" content="2024-12-19T17:00:00Z">
     <title>Gestão de Alertas - Telegram Bot</title>
     <style>
         body { font-family: Arial, sans-serif; margin: 2em; }
@@ -551,6 +551,20 @@
         // Verifica versão a cada 2 minutos
         setInterval(checkFrontendVersion, 120000);
         
+        // Verifica se há parâmetros de URL para forçar reload
+        const urlParams = new URLSearchParams(window.location.search);
+        if (urlParams.get('force_reload') === 'true') {
+            console.log('🔄 Force reload detectado via URL');
+            setTimeout(() => {
+                window.location.href = window.location.pathname;
+            }, 2000);
+        }
+        
+        // Verifica se há parâmetros de cache busting
+        if (urlParams.get('v')) {
+            console.log('🔄 Cache busting detectado:', urlParams.get('v'));
+        }
+        
         // Adiciona listener para Ctrl+F5
         document.addEventListener('keydown', function(e) {
             if ((e.ctrlKey || e.metaKey) && e.key === 'F5') {
@@ -580,6 +594,6 @@
         // Atualiza a versão na interface
         updateVersionDisplay();
     </script>
-    <!-- Timestamp: 2024-12-19 16:30:00 - Versão atualizada para Render com controle de cache aprimorado -->
+    <!-- Timestamp: 2024-12-19 17:00:00 - Versão atualizada para Render com controle de cache definitivo -->
 </body>
 </html>

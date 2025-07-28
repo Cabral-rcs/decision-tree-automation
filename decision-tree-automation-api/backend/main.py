@@ -35,7 +35,7 @@ app.include_router(lider_router)
 app.include_router(auto_alert_router)
 
 @app.get("/", response_class=HTMLResponse)
-def get_frontend():
+def get_frontend(force_reload: bool = False):
     """Serve o frontend HTML"""
     logger.info("Tentando servir o frontend...")
     
@@ -60,6 +60,7 @@ def get_frontend():
     logger.info(f"Diretório atual: {os.getcwd()}")
     logger.info(f"Diretório do backend: {os.path.dirname(__file__)}")
     logger.info(f"Ambiente: {os.environ.get('RENDER', 'local')}")
+    logger.info(f"Força reload: {force_reload}")
     
     for i, path in enumerate(possible_paths):
         logger.info(f"Tentando caminho {i+1}: {path}")
@@ -76,13 +77,28 @@ def get_frontend():
                 
                 # Adiciona headers para evitar cache de forma mais agressiva
                 headers = {
-                    "Cache-Control": "no-cache, no-store, must-revalidate, max-age=0",
+                    "Cache-Control": "no-cache, no-store, must-revalidate, max-age=0, private",
                     "Pragma": "no-cache",
                     "Expires": "Thu, 01 Jan 1970 00:00:00 GMT",
                     "Content-Type": "text/html; charset=utf-8",
                     "X-Frontend-Timestamp": timestamp,
-                    "X-Frontend-Path": path
+                    "X-Frontend-Path": path,
+                    "X-Force-Reload": str(force_reload),
+                    "X-Cache-Control": "no-cache"
                 }
+                
+                # Se force_reload for True, adiciona um script para forçar reload
+                if force_reload:
+                    reload_script = """
+                    <script>
+                        console.log('🔄 Forçando reload do frontend...');
+                        setTimeout(() => {
+                            window.location.reload(true);
+                        }, 100);
+                    </script>
+                    """
+                    # Insere o script no head do HTML
+                    content = content.replace('</head>', f'{reload_script}</head>')
                 
                 return HTMLResponse(content=content, status_code=200, headers=headers)
             except Exception as e:
@@ -146,6 +162,7 @@ def get_frontend():
                 <li>Verifique se o arquivo index.html existe na pasta correta</li>
                 <li>Faça um novo deploy no Render</li>
                 <li>Use Ctrl+F5 para forçar refresh do navegador</li>
+                <li>Acesse /?force_reload=true para forçar reload</li>
             </ul>
             
             <div class="timestamp">
@@ -271,8 +288,54 @@ def reload_frontend():
         "instructions": [
             "1. Use Ctrl+F5 para forçar refresh do navegador",
             "2. Ou acesse / para carregar a versão mais recente",
-            "3. Verifique /frontend-status para debug"
+            "3. Verifique /frontend-status para debug",
+            "4. Acesse /?force_reload=true para forçar reload automático"
         ]
+    }
+
+@app.get("/check-frontend-version")
+def check_frontend_version():
+    """Endpoint para verificar a versão atual do frontend"""
+    import datetime
+    import re
+    
+    # Lista de caminhos possíveis para o frontend
+    possible_paths = [
+        "/opt/render/project/src/decision-tree-automation-ui/index.html",
+        "/opt/render/project/src/decision-tree-automation/decision-tree-automation-ui/index.html",
+        os.path.join(os.getcwd(), "../decision-tree-automation-ui/index.html"),
+        os.path.join(os.path.dirname(os.path.dirname(__file__)), "decision-tree-automation-ui/index.html"),
+        os.path.join(os.path.dirname(__file__), "../../decision-tree-automation-ui/index.html"),
+        "/app/decision-tree-automation-ui/index.html",
+        os.path.join(os.getcwd(), "decision-tree-automation-ui/index.html")
+    ]
+    
+    for path in possible_paths:
+        if os.path.exists(path):
+            try:
+                with open(path, 'r', encoding='utf-8') as f:
+                    content = f.read()
+                
+                # Extrai a versão do conteúdo
+                version_match = re.search(r'content="([^"]*version[^"]*)"', content)
+                timestamp_match = re.search(r'Timestamp: ([^-]+)', content)
+                
+                return {
+                    "frontend_found": True,
+                    "path": path,
+                    "size": len(content),
+                    "version": version_match.group(1) if version_match else "Não encontrada",
+                    "timestamp": timestamp_match.group(1).strip() if timestamp_match else "Não encontrado",
+                    "check_time": datetime.datetime.now().isoformat(),
+                    "cache_busting_url": f"/?v={datetime.datetime.now().timestamp()}"
+                }
+            except Exception as e:
+                continue
+    
+    return {
+        "frontend_found": False,
+        "error": "Frontend não encontrado",
+        "check_time": datetime.datetime.now().isoformat()
     }
 
 # Ao iniciar o sistema, envie a primeira pergunta para todos os usuários
