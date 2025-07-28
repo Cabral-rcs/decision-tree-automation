@@ -2,7 +2,18 @@ services:
   - type: web
     name: bot-telegram-fastapi
     env: python
-    buildCommand: "pip install -r requirements.txt"
+    buildCommand: |
+      echo "=== Build Command ==="
+      echo "Instalando dependências..."
+      pip install -r requirements.txt
+      echo "Verificando estrutura do projeto..."
+      ls -la
+      echo "Verificando frontend..."
+      ls -la ../decision-tree-automation-ui/ || echo "Frontend não encontrado no caminho relativo"
+      echo "Verificando caminhos absolutos..."
+      find /opt/render/project/src -name "index.html" 2>/dev/null || echo "index.html não encontrado"
+      echo "Verificando estrutura completa do projeto..."
+      tree /opt/render/project/src || find /opt/render/project/src -type f | head -20
     startCommand: "bash start.sh"
     plan: free
     envVars:
@@ -14,7 +25,13 @@ services:
         sync: false
       - key: PYTHON_VERSION
         value: "3.13"
+      - key: RENDER
+        value: "true"
+      - key: PYTHONPATH
+        value: "/opt/render/project/src/decision-tree-automation-api"
     buildFilter:
       paths:
         - decision-tree-automation-api/**
         - decision-tree-automation-ui/**
+    healthCheckPath: "/health"
+    autoDeploy: true
