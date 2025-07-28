@@ -34,7 +34,7 @@ class EstadoUsuario(Base):
 
 def init_db():
     try:
-        force_recreate_alerta_table()  # Força o drop e recriação da tabela alertas
+        # Apenas cria as tabelas se não existirem (NÃO DROPA!)
         Base.metadata.create_all(bind=engine)
         AlertaBase.metadata.create_all(bind=engine)
         AutoAlertConfigBase.metadata.create_all(bind=engine)
