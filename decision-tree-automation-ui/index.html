@@ -24,6 +24,18 @@
         .tab-btn.active { background: #3498db; color: #fff; }
         .tab-content { display: none; }
         .tab-content.active { display: block; }
+        .auto-alert-controls { margin-bottom: 2em; }
+        .status-card { background: #f8f9fa; padding: 1em; border-radius: 8px; margin-bottom: 1em; }
+        .control-buttons { margin-bottom: 1em; }
+        .control-buttons .btn { margin-right: 0.5em; }
+        .interval-control { margin-bottom: 1em; }
+        .interval-control input { margin-left: 0.5em; padding: 4px; }
+        .auto-alert-info { background: #e3f2fd; padding: 1em; border-radius: 8px; }
+        .auto-alert-info ul { margin: 0.5em 0; padding-left: 1.5em; }
+        .btn-primary { background: #007bff; }
+        .btn-secondary { background: #6c757d; }
+        .btn-info { background: #17a2b8; }
+        .btn-danger { background: #dc3545; }
     </style>
 </head>
 <body>
@@ -31,6 +43,7 @@
     <div class="tabs">
         <button class="tab-btn active" onclick="abrirAba('alertas')">Alertas</button>
         <button class="tab-btn" onclick="abrirAba('lideres')">Gerenciar Líderes</button>
+        <button class="tab-btn" onclick="abrirAba('auto-alert')">Alertas Automáticos</button>
     </div>
     <div id="alertas" class="tab-content active">
         <button class="btn" onclick="abrirFormulario()">Novo Alerta</button>
@@ -88,6 +101,37 @@
             </thead>
             <tbody id="lideres-body"></tbody>
         </table>
+    </div>
+    <div id="auto-alert" class="tab-content">
+        <h2>Controle de Alertas Automáticos</h2>
+        <div class="auto-alert-controls">
+            <div class="status-card">
+                <h3>Status Atual</h3>
+                <div id="auto-alert-status">
+                    <p><strong>Status:</strong> <span id="status-text">Carregando...</span></p>
+                    <p><strong>Intervalo:</strong> <span id="interval-text">Carregando...</span></p>
+                    <p><strong>Última Execução:</strong> <span id="last-execution-text">Carregando...</span></p>
+                </div>
+            </div>
+            <div class="control-buttons">
+                <button class="btn btn-primary" id="toggle-btn" onclick="toggleAutoAlert()">Ativar/Desativar</button>
+                <button class="btn btn-secondary" onclick="createAlertNow()">Criar Alerta Agora</button>
+                <button class="btn btn-info" onclick="updateInterval()">Atualizar Intervalo</button>
+            </div>
+            <div class="interval-control">
+                <label for="interval-input">Intervalo (minutos):</label>
+                <input type="number" id="interval-input" min="1" max="60" value="3">
+            </div>
+        </div>
+        <div class="auto-alert-info">
+            <h3>Informações</h3>
+            <ul>
+                <li>Os alertas automáticos são criados com dados fictícios para demonstração</li>
+                <li>O líder sempre será "Rafael Cabral" (Chat ID: 6435800936)</li>
+                <li>Os alertas incluem informações como equipamento, operação e justificativa</li>
+                <li>Use o botão "Criar Alerta Agora" para testar a funcionalidade</li>
+            </ul>
+        </div>
     </div>
     <script>
         let lideres = [];
@@ -218,10 +262,79 @@
                 }).then(() => { carregarLideres(); carregarLideresSelect(); });
             }
         }
+        
+        async function carregarStatusAutoAlert() {
+            try {
+                const resp = await fetch('/auto-alert/status');
+                const status = await resp.json();
+                
+                document.getElementById('status-text').textContent = status.is_active ? 'Ativo' : 'Inativo';
+                document.getElementById('interval-text').textContent = `${status.interval_minutes} minutos`;
+                document.getElementById('last-execution-text').textContent = status.last_execution ? 
+                    new Date(status.last_execution).toLocaleString() : 'Nunca';
+                
+                const toggleBtn = document.getElementById('toggle-btn');
+                toggleBtn.textContent = status.is_active ? 'Desativar' : 'Ativar';
+                toggleBtn.className = status.is_active ? 'btn btn-danger' : 'btn btn-primary';
+            } catch (error) {
+                console.error('Erro ao carregar status:', error);
+            }
+        }
+        
+        async function toggleAutoAlert() {
+            try {
+                const resp = await fetch('/auto-alert/toggle', { method: 'POST' });
+                const result = await resp.json();
+                
+                alert(result.message);
+                carregarStatusAutoAlert();
+            } catch (error) {
+                console.error('Erro ao alternar status:', error);
+                alert('Erro ao alternar status dos alertas automáticos');
+            }
+        }
+        
+        async function createAlertNow() {
+            try {
+                const resp = await fetch('/auto-alert/create-now', { method: 'POST' });
+                const result = await resp.json();
+                
+                if (result.success) {
+                    alert(`Alerta criado com sucesso! ID: ${result.alert_id}`);
+                    carregarAlertas();
+                } else {
+                    alert('Erro ao criar alerta');
+                }
+            } catch (error) {
+                console.error('Erro ao criar alerta:', error);
+                alert('Erro ao criar alerta automático');
+            }
+        }
+        
+        async function updateInterval() {
+            const interval = document.getElementById('interval-input').value;
+            if (!interval || interval < 1 || interval > 60) {
+                alert('Intervalo deve estar entre 1 e 60 minutos');
+                return;
+            }
+            
+            try {
+                const resp = await fetch(`/auto-alert/update-interval?interval_minutes=${interval}`, { method: 'POST' });
+                const result = await resp.json();
+                
+                alert(result.message);
+                carregarStatusAutoAlert();
+            } catch (error) {
+                console.error('Erro ao atualizar intervalo:', error);
+                alert('Erro ao atualizar intervalo');
+            }
+        }
         carregarAlertas();
         carregarLideres();
+        carregarStatusAutoAlert();
         setInterval(carregarAlertas, 10000);
         setInterval(carregarLideres, 30000);
+        setInterval(carregarStatusAutoAlert, 30000);
     </script>
 </body>
 </html>

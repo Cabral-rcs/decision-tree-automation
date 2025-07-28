@@ -320,6 +320,9 @@ uvicorn backend.main:app --reload
 
 # 5. Abra o frontend
 # Abra decision-tree-automation-ui/index.html no navegador
+
+# 6. Teste os alertas automáticos (opcional)
+python test_auto_alert.py
 ```
 
 ---
@@ -358,6 +361,48 @@ uvicorn backend.main:app --reload
 - **Configuração**: `render.yaml`
 - **Comando**: `bash start.sh`
 - **Variáveis**: Configuradas no painel do Render
+
+---
+
+## Alertas Automáticos
+
+### Funcionalidade
+O sistema agora inclui criação automática de alertas com dados mockados para demonstração:
+
+- **Geração Automática**: Alertas são criados automaticamente a cada 3 minutos (configurável)
+- **Dados Mockados**: Inclui informações realistas como equipamentos, operações e problemas
+- **Líder Fixo**: Todos os alertas automáticos são atribuídos ao "Rafael Cabral" (Chat ID: 6435800936)
+- **Controle Manual**: Interface para ativar/desativar e criar alertas manualmente
+
+### Endpoints da API
+
+#### GET `/auto-alert/status`
+Retorna o status atual da criação automática de alertas.
+
+#### POST `/auto-alert/toggle`
+Ativa/desativa a criação automática de alertas.
+
+#### POST `/auto-alert/create-now`
+Cria um alerta imediatamente (para teste).
+
+#### POST `/auto-alert/update-interval?interval_minutes=X`
+Atualiza o intervalo de criação de alertas (1-60 minutos).
+
+### Interface Web
+A aba "Alertas Automáticos" permite:
+- Visualizar status atual
+- Ativar/desativar criação automática
+- Criar alertas manualmente
+- Configurar intervalo de criação
+- Ver informações sobre a funcionalidade
+
+### Dados Gerados
+Os alertas automáticos incluem:
+- **Equipamentos**: Colheitadeiras, tratores, plantadeiras, etc.
+- **Operações**: Manutenção, troca de filtros, ajustes, etc.
+- **Unidades**: Diferentes unidades da empresa
+- **Frentes**: Frentes de trabalho variadas
+- **Problemas**: Descrições realistas de problemas operacionais
 
 ---
 

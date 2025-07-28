@@ -8,6 +8,7 @@ from sqlalchemy.sql import func
 from dotenv import load_dotenv
 from backend.models.alerta_model import Alerta, Base as AlertaBase, force_recreate_alerta_table
 from backend.models.lider_model import Lider, Base as LiderBase
+from backend.models.auto_alert_config_model import AutoAlertConfig, Base as AutoAlertConfigBase
 
 load_dotenv()
 
@@ -38,6 +39,7 @@ def init_db():
         Base.metadata.create_all(bind=engine)
         AlertaBase.metadata.create_all(bind=engine)
         LiderBase.metadata.create_all(bind=engine)
+        AutoAlertConfigBase.metadata.create_all(bind=engine)
     except OperationalError as e:
         print('Erro ao conectar ao banco:', e)
 
