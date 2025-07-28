@@ -31,7 +31,28 @@ app.include_router(auto_alert_router)
 
 @app.get("/")
 def get_frontend():
-    return FileResponse(os.path.join(os.path.dirname(__file__), "../../decision-tree-automation-ui/index.html"))
+    # Caminhos otimizados baseados no teste
+    possible_paths = [
+        # Caminho que funciona localmente e no Render
+        os.path.join(os.getcwd(), "../decision-tree-automation-ui/index.html"),
+        # Caminho alternativo
+        os.path.join(os.path.dirname(os.path.dirname(__file__)), "decision-tree-automation-ui/index.html"),
+        # Caminho para desenvolvimento local
+        os.path.join(os.path.dirname(__file__), "../../decision-tree-automation-ui/index.html")
+    ]
+    
+    for path in possible_paths:
+        if os.path.exists(path):
+            return FileResponse(path)
+    
+    # Se não encontrar o arquivo, retorna uma página de erro informativa
+    return {
+        "error": "Frontend não encontrado",
+        "message": "O arquivo index.html não foi encontrado nos caminhos esperados",
+        "possible_paths": possible_paths,
+        "current_directory": os.getcwd(),
+        "backend_directory": os.path.dirname(__file__)
+    }
     
 # Ao iniciar o sistema, envie a primeira pergunta para todos os usuários
 @app.on_event("startup")
