@@ -17,3 +17,4 @@ services:
     buildFilter:
       paths:
         - decision-tree-automation-api/**
+        - decision-tree-automation-ui/**
