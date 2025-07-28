@@ -6,8 +6,8 @@
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate, max-age=0">
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="Thu, 01 Jan 1970 00:00:00 GMT">
-    <meta name="version" content="2024-12-19-19-00-00">
-    <meta name="build-timestamp" content="2024-12-19T19:00:00Z">
+    <meta name="version" content="2024-12-19-20-30-00">
+    <meta name="build-timestamp" content="2024-12-19T20:30:00Z">
     <title>Gestão de Alertas - Telegram Bot</title>
     <style>
         body { font-family: Arial, sans-serif; margin: 2em; }
@@ -17,9 +17,6 @@
         th { background: #f4f4f4; }
         .btn { padding: 8px 16px; background: #3498db; color: #fff; border: none; border-radius: 4px; cursor: pointer; }
         .btn:hover { background: #217dbb; }
-        .form-popup { display: none; position: fixed; top: 20%; left: 50%; transform: translate(-50%, 0); background: #fff; border: 1px solid #ccc; padding: 2em; z-index: 10; box-shadow: 0 2px 8px #0002; }
-        .form-popup input, .form-popup textarea { width: 100%; margin-bottom: 1em; padding: 8px; }
-        .overlay { display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: #0005; z-index: 5; }
         .status-operando { color: green; font-weight: bold; }
         .status-nao-operando { color: red; font-weight: bold; }
         .bg-escalada { background: #fffbe6; }
@@ -42,7 +39,6 @@
         .btn-secondary { background: #6c757d; }
         .btn-info { background: #17a2b8; }
         .btn-danger { background: #dc3545; }
-        .btn-warning { background: #ffc107; color: #000; }
         
         /* Estilos para tabelas com muitas colunas */
         table { 
@@ -81,17 +77,6 @@
         <button class="tab-btn" onclick="abrirAba('auto-alert')">Alertas Automáticos</button>
     </div>
     <div id="alertas" class="tab-content active">
-        <button class="btn" onclick="abrirFormulario()">Novo Alerta</button>
-        <div class="overlay" id="overlay" onclick="fecharFormulario()"></div>
-        <div class="form-popup" id="formAlerta">
-            <h2>Novo Alerta</h2>
-            <form onsubmit="enviarAlerta(event)">
-                <label>Tipo do problema:</label>
-                <textarea id="problema" required></textarea>
-                <button class="btn" type="submit">Criar Alerta</button>
-                <button class="btn" type="button" onclick="fecharFormulario()">Cancelar</button>
-            </form>
-        </div>
         <h2>Aguardando Previsão</h2>
         <div class="table-container">
             <table>
@@ -161,20 +146,10 @@
                     <p><strong>Última Execução:</strong> <span id="last-execution-text">Carregando...</span></p>
                 </div>
             </div>
-            <div class="status-card">
-                <h3>Status do Scheduler</h3>
-                <div id="scheduler-status">
-                    <p><strong>Scheduler Ativo:</strong> <span id="scheduler-running">Carregando...</span></p>
-                    <p><strong>Thread Viva:</strong> <span id="thread-alive">Carregando...</span></p>
-                    <p><strong>Intervalo Atual:</strong> <span id="current-interval">Carregando...</span></p>
-                </div>
-            </div>
             <div class="control-buttons">
                 <button class="btn btn-primary" id="toggle-btn" onclick="toggleAutoAlert()">Ativar/Desativar</button>
                 <button class="btn btn-secondary" onclick="createAlertNow()">Criar Alerta Agora</button>
                 <button class="btn btn-info" onclick="updateInterval()">Atualizar Intervalo</button>
-                <button class="btn btn-info" onclick="refreshSchedulerStatus()">Atualizar Status</button>
-                <button class="btn btn-warning" onclick="forceCreateAlert()">Forçar Criação (Debug)</button>
             </div>
             <div class="interval-control">
                 <label for="interval-input">Intervalo (minutos):</label>
@@ -197,29 +172,6 @@
             document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
             document.querySelector(`.tab-btn[onclick*="${aba}"]`).classList.add('active');
             document.getElementById(aba).classList.add('active');
-        }
-        function abrirFormulario() {
-            document.getElementById('formAlerta').style.display = 'block';
-            document.getElementById('overlay').style.display = 'block';
-        }
-        function fecharFormulario() {
-            document.getElementById('formAlerta').style.display = 'none';
-            document.getElementById('overlay').style.display = 'none';
-        }
-        async function enviarAlerta(e) {
-            e.preventDefault();
-            const problema = document.getElementById('problema').value;
-            await fetch('/alertas', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ 
-                    nome_lider: 'Rafael Cabral',
-                    chat_id: '6435800936',
-                    problema 
-                })
-            });
-            fecharFormulario();
-            carregarAlertas();
         }
         async function atualizarStatus(id, status) {
             await fetch(`/alertas/${id}/status`, {
@@ -412,62 +364,11 @@
                 alert('Erro ao atualizar intervalo');
             }
         }
-        async function refreshSchedulerStatus() {
-            try {
-                const resp = await fetch('/auto-alert/scheduler-status');
-                const status = await resp.json();
-                
-                document.getElementById('scheduler-running').textContent = status.scheduler_running ? 'Sim' : 'Não';
-                document.getElementById('thread-alive').textContent = status.thread_alive ? 'Sim' : 'Não';
-                document.getElementById('current-interval').textContent = `${status.current_interval_minutes} minutos`;
-                
-                console.log('Status do scheduler atualizado:', status);
-            } catch (error) {
-                console.error('Erro ao atualizar status do Scheduler:', error);
-                document.getElementById('scheduler-running').textContent = 'Erro';
-                document.getElementById('thread-alive').textContent = 'Erro';
-                document.getElementById('current-interval').textContent = 'Erro';
-            }
-        }
         
-        async function forceCreateAlert() {
-            try {
-                const resp = await fetch('/auto-alert/force-create', { method: 'POST' });
-                const result = await resp.json();
-                
-                if (result.success) {
-                    alert('Alerta criado forçadamente! Verifique a lista de alertas.');
-                    carregarAlertas();
-                } else {
-                    alert('Erro ao forçar criação de alerta');
-                }
-            } catch (error) {
-                console.error('Erro ao forçar criação:', error);
-                alert('Erro ao forçar criação de alerta');
-            }
-        }
-        
-        async function carregarStatusScheduler() {
-            try {
-                const resp = await fetch('/auto-alert/scheduler-status');
-                const status = await resp.json();
-                
-                document.getElementById('scheduler-running').textContent = status.scheduler_running ? 'Sim' : 'Não';
-                document.getElementById('thread-alive').textContent = status.thread_alive ? 'Sim' : 'Não';
-                document.getElementById('current-interval').textContent = `${status.current_interval_minutes} minutos`;
-            } catch (error) {
-                console.error('Erro ao carregar status do scheduler:', error);
-                document.getElementById('scheduler-running').textContent = 'Erro';
-                document.getElementById('thread-alive').textContent = 'Erro';
-                document.getElementById('current-interval').textContent = 'Erro';
-            }
-        }
         carregarAlertas();
         carregarStatusAutoAlert();
-        carregarStatusScheduler();
         setInterval(carregarAlertas, 10000);
         setInterval(carregarStatusAutoAlert, 30000);
-        setInterval(carregarStatusScheduler, 30000);
         
         // Força refresh a cada 5 minutos para garantir atualização
         setInterval(() => {
@@ -495,6 +396,6 @@
         console.log('🔄 Auto-refresh ativo a cada 5 minutos');
         console.log('⌨️  Use Ctrl+F5 para forçar refresh manual');
     </script>
-    <!-- Timestamp: 2024-12-19 19:00:00 - Versão simplificada sem gerenciamento de líderes -->
+    <!-- Timestamp: 2024-12-19 20:30:00 - Versão simplificada sem gerenciamento de líderes -->
 </body>
 </html>
