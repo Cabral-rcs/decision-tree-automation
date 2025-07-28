@@ -4,8 +4,7 @@ from backend.models.responses_model import SessionLocal
 from backend.models.auto_alert_config_model import AutoAlertConfig
 from backend.models.lider_model import Lider
 from backend.services.mock_data_generator import MockDataGenerator
-from backend.controllers.alerta_controller import criar_alerta
-from backend.services.auto_alert_scheduler import auto_alert_scheduler
+# Importações movidas para dentro das funções para evitar importação circular
 from datetime import datetime
 import logging
 
@@ -79,6 +78,9 @@ def toggle_auto_alert():
 @router.post('/auto-alert/create-now')
 def create_alert_now():
     """Cria um alerta imediatamente (para teste)"""
+    # Importação local para evitar importação circular
+    from backend.controllers.alerta_controller import criar_alerta
+    
     try:
         # Garante que Rafael Cabral existe
         ensure_rafael_cabral_exists()
@@ -126,6 +128,7 @@ def update_interval(interval_minutes: int):
         db.refresh(config)
         
         # Atualiza o scheduler com o novo intervalo
+        from backend.services.auto_alert_scheduler import auto_alert_scheduler
         auto_alert_scheduler.update_interval(interval_minutes)
         
         return {

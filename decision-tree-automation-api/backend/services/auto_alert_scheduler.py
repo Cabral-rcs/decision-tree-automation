@@ -6,8 +6,7 @@ from sqlalchemy.orm import Session
 from backend.models.responses_model import SessionLocal
 from backend.models.auto_alert_config_model import AutoAlertConfig
 from backend.services.mock_data_generator import MockDataGenerator
-from backend.controllers.alerta_controller import criar_alerta
-from backend.controllers.auto_alert_controller import ensure_rafael_cabral_exists
+# Importações movidas para dentro da função para evitar importação circular
 
 logger = logging.getLogger(__name__)
 
@@ -62,6 +61,10 @@ class AutoAlertScheduler:
     
     def _create_auto_alert(self):
         """Executa a criação automática de alertas"""
+        # Importações locais para evitar importação circular
+        from backend.controllers.alerta_controller import criar_alerta
+        from backend.controllers.auto_alert_controller import ensure_rafael_cabral_exists
+        
         db: Session = SessionLocal()
         try:
             # Verifica se a criação automática está ativa

@@ -36,18 +36,22 @@ def get_frontend():
 # Ao iniciar o sistema, envie a primeira pergunta para todos os usuários
 @app.on_event("startup")
 def enviar_primeira_pergunta():
-    for user_id in CHAT_IDS:
-        enviar_pergunta_para_usuario(user_id)
-    
-    # Inicializa o scheduler de alertas automáticos
-    from backend.services.auto_alert_scheduler import auto_alert_scheduler
-    from backend.controllers.auto_alert_controller import ensure_rafael_cabral_exists
-    
-    # Garante que Rafael Cabral existe
-    ensure_rafael_cabral_exists()
-    
-    # Inicia o scheduler
-    auto_alert_scheduler.start()
+    try:
+        for user_id in CHAT_IDS:
+            enviar_pergunta_para_usuario(user_id)
+        
+        # Inicializa o scheduler de alertas automáticos
+        from backend.services.auto_alert_scheduler import auto_alert_scheduler
+        from backend.controllers.auto_alert_controller import ensure_rafael_cabral_exists
+        
+        # Garante que Rafael Cabral existe
+        ensure_rafael_cabral_exists()
+        
+        # Inicia o scheduler
+        auto_alert_scheduler.start()
+    except Exception as e:
+        print(f"Erro na inicialização: {e}")
+        # Continua mesmo se houver erro na inicialização
 
 # Comentário: O backend segue o padrão MVC, separando models, views e controllers.
 # O envio inicial de perguntas ocorre no evento de startup. 
