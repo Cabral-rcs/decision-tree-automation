@@ -41,20 +41,25 @@ def get_frontend():
     
     # Lista de caminhos possíveis para o frontend
     possible_paths = [
-        # Caminho para Render (produção)
-        os.path.join(os.getcwd(), "../decision-tree-automation-ui/index.html"),
+        # Caminho para Render (produção) - mais específico
+        "/opt/render/project/src/decision-tree-automation-ui/index.html",
         # Caminho alternativo para Render
+        "/opt/render/project/src/decision-tree-automation/decision-tree-automation-ui/index.html",
+        # Caminho relativo para Render
+        os.path.join(os.getcwd(), "../decision-tree-automation-ui/index.html"),
+        # Caminho alternativo relativo para Render
         os.path.join(os.path.dirname(os.path.dirname(__file__)), "decision-tree-automation-ui/index.html"),
         # Caminho para desenvolvimento local
         os.path.join(os.path.dirname(__file__), "../../decision-tree-automation-ui/index.html"),
-        # Caminho absoluto para Render
-        "/opt/render/project/src/decision-tree-automation-ui/index.html",
-        # Caminho alternativo absoluto
-        "/opt/render/project/src/decision-tree-automation/decision-tree-automation-ui/index.html"
+        # Caminho absoluto alternativo
+        "/app/decision-tree-automation-ui/index.html",
+        # Caminho do workspace atual
+        os.path.join(os.getcwd(), "decision-tree-automation-ui/index.html")
     ]
     
     logger.info(f"Diretório atual: {os.getcwd()}")
     logger.info(f"Diretório do backend: {os.path.dirname(__file__)}")
+    logger.info(f"Ambiente: {os.environ.get('RENDER', 'local')}")
     
     for i, path in enumerate(possible_paths):
         logger.info(f"Tentando caminho {i+1}: {path}")
@@ -64,7 +69,22 @@ def get_frontend():
                 with open(path, 'r', encoding='utf-8') as f:
                     content = f.read()
                 logger.info(f"✅ Frontend carregado com sucesso ({len(content)} bytes)")
-                return HTMLResponse(content=content, status_code=200)
+                
+                # Adiciona timestamp único para forçar refresh
+                import datetime
+                timestamp = datetime.datetime.now().isoformat()
+                
+                # Adiciona headers para evitar cache de forma mais agressiva
+                headers = {
+                    "Cache-Control": "no-cache, no-store, must-revalidate, max-age=0",
+                    "Pragma": "no-cache",
+                    "Expires": "Thu, 01 Jan 1970 00:00:00 GMT",
+                    "Content-Type": "text/html; charset=utf-8",
+                    "X-Frontend-Timestamp": timestamp,
+                    "X-Frontend-Path": path
+                }
+                
+                return HTMLResponse(content=content, status_code=200, headers=headers)
             except Exception as e:
                 logger.error(f"❌ Erro ao ler arquivo {path}: {e}")
                 continue
@@ -76,23 +96,42 @@ def get_frontend():
     <html>
     <head>
         <title>Erro - Frontend não encontrado</title>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+        <meta http-equiv="Pragma" content="no-cache">
+        <meta http-equiv="Expires" content="0">
         <style>
             body {{ font-family: Arial, sans-serif; margin: 2em; background: #f5f5f5; }}
             .error-container {{ background: white; padding: 2em; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }}
             .error-title {{ color: #d32f2f; margin-bottom: 1em; }}
             .path-list {{ background: #f8f9fa; padding: 1em; border-radius: 4px; margin: 1em 0; }}
             .path-item {{ margin: 0.5em 0; font-family: monospace; }}
+            .timestamp {{ color: #666; font-size: 0.9em; margin-top: 2em; }}
+            .refresh-btn {{ background: #007bff; color: white; padding: 10px 20px; border: none; border-radius: 4px; cursor: pointer; margin: 10px 0; }}
+            .refresh-btn:hover {{ background: #0056b3; }}
         </style>
+        <script>
+            // Auto-refresh a cada 5 segundos
+            setTimeout(() => {{
+                location.reload(true);
+            }}, 5000);
+        </script>
     </head>
     <body>
         <div class="error-container">
             <h1 class="error-title">❌ Frontend não encontrado</h1>
             <p>O arquivo index.html não foi encontrado nos caminhos esperados.</p>
+            <p><strong>Auto-refresh ativo:</strong> A página será recarregada automaticamente a cada 5 segundos.</p>
+            
+            <button class="refresh-btn" onclick="location.reload(true)">🔄 Recarregar Agora</button>
             
             <h3>Informações do ambiente:</h3>
             <ul>
                 <li><strong>Diretório atual:</strong> {os.getcwd()}</li>
                 <li><strong>Diretório do backend:</strong> {os.path.dirname(__file__)}</li>
+                <li><strong>Ambiente:</strong> {os.environ.get('RENDER', 'local')}</li>
+                <li><strong>Timestamp:</strong> {__import__('datetime').datetime.now().isoformat()}</li>
             </ul>
             
             <h3>Caminhos testados:</h3>
@@ -105,7 +144,13 @@ def get_frontend():
                 <li>Verifique se o frontend está incluído no deploy do Render</li>
                 <li>Confirme se o render.yaml inclui decision-tree-automation-ui/**</li>
                 <li>Verifique se o arquivo index.html existe na pasta correta</li>
+                <li>Faça um novo deploy no Render</li>
+                <li>Use Ctrl+F5 para forçar refresh do navegador</li>
             </ul>
+            
+            <div class="timestamp">
+                <p>Última verificação: {__import__('datetime').datetime.now().isoformat()}</p>
+            </div>
         </div>
     </body>
     </html>
@@ -131,7 +176,68 @@ def debug_info():
             os.path.join(os.path.dirname(__file__), "../../decision-tree-automation-ui/index.html"),
         ]
     }
+
+@app.get("/force-refresh")
+def force_refresh():
+    """Endpoint para forçar refresh do frontend"""
+    return {
+        "message": "Use Ctrl+F5 ou Cmd+Shift+R para forçar refresh do navegador",
+        "timestamp": __import__('datetime').datetime.now().isoformat(),
+        "cache_headers": {
+            "Cache-Control": "no-cache, no-store, must-revalidate, max-age=0",
+            "Pragma": "no-cache",
+            "Expires": "Thu, 01 Jan 1970 00:00:00 GMT"
+        }
+    }
+
+@app.get("/frontend-status")
+def frontend_status():
+    """Endpoint para verificar o status do frontend"""
+    import datetime
     
+    # Lista de caminhos possíveis para o frontend
+    possible_paths = [
+        "/opt/render/project/src/decision-tree-automation-ui/index.html",
+        "/opt/render/project/src/decision-tree-automation/decision-tree-automation-ui/index.html",
+        os.path.join(os.getcwd(), "../decision-tree-automation-ui/index.html"),
+        os.path.join(os.path.dirname(os.path.dirname(__file__)), "decision-tree-automation-ui/index.html"),
+        os.path.join(os.path.dirname(__file__), "../../decision-tree-automation-ui/index.html"),
+        "/app/decision-tree-automation-ui/index.html",
+        os.path.join(os.getcwd(), "decision-tree-automation-ui/index.html")
+    ]
+    
+    status = {
+        "current_directory": os.getcwd(),
+        "backend_directory": os.path.dirname(__file__),
+        "environment": os.environ.get('RENDER', 'local'),
+        "timestamp": datetime.datetime.now().isoformat(),
+        "paths_checked": [],
+        "frontend_found": False,
+        "frontend_path": None,
+        "frontend_size": None
+    }
+    
+    for path in possible_paths:
+        exists = os.path.exists(path)
+        size = None
+        if exists:
+            try:
+                size = os.path.getsize(path)
+                if not status["frontend_found"]:
+                    status["frontend_found"] = True
+                    status["frontend_path"] = path
+                    status["frontend_size"] = size
+            except Exception as e:
+                size = f"Erro ao ler: {e}"
+        
+        status["paths_checked"].append({
+            "path": path,
+            "exists": exists,
+            "size": size
+        })
+    
+    return status
+
 # Ao iniciar o sistema, envie a primeira pergunta para todos os usuários
 @app.on_event("startup")
 def enviar_primeira_pergunta():

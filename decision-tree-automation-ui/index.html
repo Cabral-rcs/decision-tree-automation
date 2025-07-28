@@ -2,6 +2,12 @@
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate, max-age=0">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="Thu, 01 Jan 1970 00:00:00 GMT">
+    <meta name="version" content="2024-12-19-16-00-00">
+    <meta name="build-timestamp" content="2024-12-19T16:00:00Z">
     <title>Gestão de Alertas - Telegram Bot</title>
     <style>
         body { font-family: Arial, sans-serif; margin: 2em; }
@@ -467,6 +473,66 @@
         setInterval(carregarAlertas, 10000);
         setInterval(carregarLideres, 30000);
         setInterval(carregarStatusAutoAlert, 30000);
+        
+        // Força refresh a cada 5 minutos para garantir atualização
+        setInterval(() => {
+            if (confirm('Atualizar a página para garantir a versão mais recente?')) {
+                location.reload(true);
+            }
+        }, 300000); // 5 minutos
+        
+        // Verificação de versão e cache
+        async function checkFrontendVersion() {
+            try {
+                const resp = await fetch('/frontend-status');
+                const status = await resp.json();
+                
+                console.log('Frontend Status:', status);
+                
+                // Se o frontend não foi encontrado, força refresh
+                if (!status.frontend_found) {
+                    console.warn('Frontend não encontrado, forçando refresh...');
+                    location.reload(true);
+                    return;
+                }
+                
+                // Verifica se há uma versão mais recente
+                const currentVersion = document.querySelector('meta[name="version"]')?.content;
+                const currentTimestamp = document.querySelector('meta[name="build-timestamp"]')?.content;
+                
+                console.log('Versão atual:', currentVersion);
+                console.log('Timestamp atual:', currentTimestamp);
+                console.log('Frontend path:', status.frontend_path);
+                console.log('Frontend size:', status.frontend_size);
+                
+            } catch (error) {
+                console.error('Erro ao verificar versão:', error);
+            }
+        }
+        
+        // Verifica versão na inicialização
+        checkFrontendVersion();
+        
+        // Verifica versão a cada 2 minutos
+        setInterval(checkFrontendVersion, 120000);
+        
+        // Adiciona listener para Ctrl+F5
+        document.addEventListener('keydown', function(e) {
+            if ((e.ctrlKey || e.metaKey) && e.key === 'F5') {
+                e.preventDefault();
+                console.log('Forçando refresh manual...');
+                location.reload(true);
+            }
+        });
+        
+        // Log de inicialização
+        console.log('🎯 Decision Tree Automation - Frontend carregado');
+        console.log('📅 Versão:', document.querySelector('meta[name="version"]')?.content);
+        console.log('⏰ Timestamp:', document.querySelector('meta[name="build-timestamp"]')?.content);
+        console.log('🔄 Auto-refresh ativo a cada 5 minutos');
+        console.log('🔍 Verificação de versão ativa a cada 2 minutos');
+        console.log('⌨️  Use Ctrl+F5 para forçar refresh manual');
     </script>
+    <!-- Timestamp: 2024-12-19 16:00:00 - Versão atualizada para Render com controle de cache -->
 </body>
 </html>
