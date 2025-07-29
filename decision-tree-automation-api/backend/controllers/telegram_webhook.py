@@ -16,14 +16,18 @@ logger = logging.getLogger(__name__)
 # Função para processar webhooks do Telegram
 async def telegram_webhook(request: Request):
     """Processa webhooks do Telegram"""
+    logger.info("🚀 INICIANDO PROCESSAMENTO DO WEBHOOK")
+    print("🚀 INICIANDO PROCESSAMENTO DO WEBHOOK")
+    
     try:
         data = await request.json()
-        logger.info(f'Webhook recebido: {data}')
-        print(f'🔔 WEBHOOK RECEBIDO: {data}')  # Log para debug
+        logger.info(f'📥 Dados recebidos no webhook: {data}')
+        print(f'📥 Dados recebidos no webhook: {data}')
         
         # Verifica se é uma mensagem válida
         if 'message' not in data:
-            logger.warning('Webhook não contém mensagem')
+            logger.warning('❌ Webhook não contém mensagem')
+            print('❌ Webhook não contém mensagem')
             return {"status": "ignored", "msg": "Não é uma mensagem"}
         
         message = data.get('message', {})
@@ -39,15 +43,15 @@ async def telegram_webhook(request: Request):
         msg_br = msg_utc.replace(tzinfo=pytz.utc).astimezone(tz_br) if msg_utc else None
         resposta = message.get('text') or '[outro tipo de mensagem]'
         
-        logger.info(f'Processando mensagem de {nome_lider} (ID: {user_id}): {resposta}')
-        print(f'📱 Processando: {nome_lider} ({user_id}) -> {resposta}')
+        logger.info(f'👤 Processando mensagem de {nome_lider} (ID: {user_id}): {resposta}')
+        print(f'👤 Processando mensagem de {nome_lider} (ID: {user_id}): {resposta}')
         
         # Verifica se é o Rafael Cabral (validação mais flexível)
         nome_completo = nome_lider.lower()
         is_rafael = ('rafael' in nome_completo or 'cabral' in nome_completo or user_id == 6435800936)
         
         if not is_rafael:
-            logger.info(f'Mensagem ignorada - não é do Rafael Cabral: {nome_lider} (ID: {user_id})')
+            logger.info(f'🚫 Mensagem ignorada - não é do Rafael Cabral: {nome_lider} (ID: {user_id})')
             print(f'🚫 Mensagem ignorada - não é do Rafael Cabral: {nome_lider} (ID: {user_id})')
             return {"status": "ignored", "msg": "Não é do líder autorizado"}
         
@@ -186,7 +190,7 @@ async def telegram_webhook(request: Request):
             }
             
         except Exception as e:
-            logger.error(f'Erro ao processar alerta: {str(e)}')
+            logger.error(f'❌ Erro ao processar alerta: {str(e)}')
             print(f'❌ Erro ao processar alerta: {str(e)}')
             
             # Envia mensagem de erro para o usuário
@@ -204,6 +208,9 @@ async def telegram_webhook(request: Request):
             db.close()
             
     except Exception as e:
-        logger.error(f'Erro geral no webhook: {str(e)}')
+        logger.error(f'❌ Erro geral no webhook: {str(e)}')
         print(f'❌ Erro geral no webhook: {str(e)}')
-        return {"status": "error", "msg": str(e)} 
+        return {"status": "error", "msg": str(e)}
+    finally:
+        logger.info("🏁 FINALIZANDO PROCESSAMENTO DO WEBHOOK")
+        print("🏁 FINALIZANDO PROCESSAMENTO DO WEBHOOK") 
