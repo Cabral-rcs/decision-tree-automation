@@ -71,8 +71,19 @@ async def telegram_webhook(request: Request):
                 requests.post(f'{TELEGRAM_API_URL}/sendMessage', data=payload)
                 return {"status": "no_pending", "msg": "Nenhum alerta pendente"}
             
-            logger.info(f'Alerta encontrado: ID {alerta.id}, Problema: {alerta.problema[:50]}...')
-            print(f'🎯 Alerta encontrado: ID {alerta.id}')
+            # Log de debug: mostra o alerta que será processado
+            logger.info(f'Alerta a ser processado: ID {alerta.id}, Criado: {alerta.criado_em}')
+            print(f'🎯 Alerta a ser processado: ID {alerta.id}')
+            print(f'   Criado em: {alerta.criado_em}')
+            print(f'   Problema: {alerta.problema[:100]}...')
+            print(f'   É automático: {"Sim" if alerta.problema.startswith("[AUTO]") else "Não"}')
+            
+            # Verifica quantos alertas pendentes existem no total
+            total_pendentes = db.query(Alerta).filter(
+                Alerta.previsao.is_(None)
+            ).count()
+            
+            print(f'📋 Total de alertas pendentes na fila: {total_pendentes}')
             
             # Validação do padrão HH:MM
             padrao = r'^(\d{2}):(\d{2})$'
@@ -84,7 +95,7 @@ async def telegram_webhook(request: Request):
                 # Pede novamente com instruções claras
                 payload = {
                     'chat_id': user_id,
-                    'text': f'Por favor, informe a previsão apenas no formato HH:MM (ex: 15:30).\n\nAlerta: {alerta.problema[:100]}...'
+                    'text': f'Por favor, informe a previsão apenas no formato HH:MM (ex: 15:30).\n\nAlerta pendente: {alerta.problema[:100]}...\n\nAlertas na fila: {total_pendentes}'
                 }
                 requests.post(f'{TELEGRAM_API_URL}/sendMessage', data=payload)
                 return {"status": "invalid_format", "msg": "Formato inválido"}
@@ -96,7 +107,7 @@ async def telegram_webhook(request: Request):
             logger.info(f'Previsão processada: {resposta} -> {previsao_dt}')
             print(f'⏰ Previsão processada: {resposta} -> {previsao_dt}')
             
-            # Atualiza o alerta específico com a previsão (chave-valor)
+            # Atualiza o alerta específico com a previsão (ordinal - um por vez)
             logger.info(f'Atualizando alerta {alerta.id} com previsão: {resposta}')
             print(f'🔄 Atualizando alerta {alerta.id} com previsão: {resposta}')
             
@@ -121,10 +132,25 @@ async def telegram_webhook(request: Request):
                 print(f'❌ Falha ao atualizar alerta {alerta.id}')
                 raise Exception("Falha ao salvar previsão no banco de dados")
             
+            # Verifica quantos alertas ainda estão pendentes
+            alertas_restantes = db.query(Alerta).filter(
+                Alerta.previsao.is_(None)
+            ).count()
+            
             # Confirmação para o líder
+            mensagem_confirmacao = f'✅ Previsão registrada: {resposta}\n\n'
+            mensagem_confirmacao += f'Alerta ID: {alerta.id}\n'
+            mensagem_confirmacao += f'Problema: {alerta.problema[:100]}...\n\n'
+            mensagem_confirmacao += f'O alerta foi movido para "Escaladas" e será monitorado até {resposta}.\n\n'
+            
+            if alertas_restantes > 0:
+                mensagem_confirmacao += f'⚠️  Ainda há {alertas_restantes} alerta(s) pendente(s) na fila.'
+            else:
+                mensagem_confirmacao += f'✅ Todos os alertas foram processados!'
+            
             payload = {
                 'chat_id': user_id,
-                'text': f'✅ Previsão registrada: {resposta}\n\nAlerta ID: {alerta.id}\nProblema: {alerta.problema[:100]}...\n\nO alerta foi movido para "Escaladas" e será monitorado até este horário.'
+                'text': mensagem_confirmacao
             }
             resp_telegram = requests.post(f'{TELEGRAM_API_URL}/sendMessage', data=payload, timeout=10)
             if resp_telegram.ok:
@@ -143,7 +169,12 @@ async def telegram_webhook(request: Request):
                     'timestamp': msg_utc.isoformat()
                 })
             
-            return {"status": "success", "msg": "Previsão registrada com sucesso", "alerta_id": alerta.id}
+            return {
+                "status": "success", 
+                "msg": "Previsão registrada com sucesso", 
+                "alerta_id": alerta.id,
+                "alertas_restantes": alertas_restantes
+            }
             
         except Exception as e:
             logger.error(f'Erro ao processar alerta: {str(e)}')
