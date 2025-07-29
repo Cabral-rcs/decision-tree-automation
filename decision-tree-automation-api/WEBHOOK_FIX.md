@@ -42,6 +42,11 @@
 - ✅ Correção de erro "cannot access local variable 'datetime' where it is not associated with a value"
 - ✅ `test_webhook_quick.py` - Script de teste rápido após correção
 
+### 8. **Correção do Campo Respondido_em** ⭐ **NOVO**
+- ✅ Campo `respondido_em` agora usa o tempo real de criação do alerta
+- ✅ Correção de dados mockados para tempo real
+- ✅ `test_respondido_em.py` - Script de teste específico para o campo
+
 ## Problemas Corrigidos
 
 ### ❌ **Erro de Timestamp**
@@ -62,6 +67,12 @@ ERROR: can't compare offset-naive and offset-aware datetimes
 ERROR: cannot access local variable 'datetime' where it is not associated with a value
 ```
 **✅ Solução**: Remoção de import duplicado de `datetime` dentro do bloco try
+
+### ❌ **Campo Respondido_em com Dados Mockados** ⭐ **NOVO**
+```
+respondido_em = datetime.utcnow()  # Tempo atual (incorreto)
+```
+**✅ Solução**: Uso do tempo real de criação do alerta (`alerta.criado_em`)
 
 ## Como Testar
 
@@ -107,7 +118,13 @@ cd decision-tree-automation-api
 python test_webhook_quick.py
 ```
 
-### 7. **Teste Manual**
+### 7. **Teste do Campo Respondido_em** ⭐ **NOVO**
+```bash
+cd decision-tree-automation-api
+python test_respondido_em.py
+```
+
+### 8. **Teste Manual**
 1. Envie uma mensagem para o bot no Telegram
 2. Verifique os logs do servidor
 3. Confirme se o alerta foi atualizado
@@ -193,6 +210,12 @@ INFO: Alerta 1 adicionado aos escalados (com previsão: 12:57)
 ```
 **✅ Solução**: Remoção de import duplicado de `datetime` dentro do bloco try
 
+#### 8. **Campo respondido_em incorreto** ⭐ **CORRIGIDO**
+```
+❌ Campo respondido_em usando tempo atual em vez do tempo de criação
+```
+**✅ Solução**: Uso do tempo real de criação do alerta (`alerta.criado_em`)
+
 ## Status de Sucesso
 
 - ✅ Webhook configurado corretamente
@@ -205,14 +228,16 @@ INFO: Alerta 1 adicionado aos escalados (com previsão: 12:57)
 - ✅ **Timestamp corrigido** ⭐
 - ✅ **Listagem funcionando** ⭐
 - ✅ **Escopo de variável corrigido** ⭐ **FINAL**
+- ✅ **Campo respondido_em corrigido** ⭐ **NOVO**
 
 ## Próximos Passos
 
-1. Execute o teste rápido: `python test_webhook_quick.py`
-2. Execute o script de teste completo: `python test_webhook.py`
-3. Execute o teste de timezone: `python test_timezone_fix.py`
-4. Force a reconfiguração: `/telegram-force-setup`
-5. Envie uma mensagem de teste no Telegram
-6. Verifique se o alerta foi atualizado corretamente
-7. Confirme que aparece na categoria "Escaladas"
-8. Monitore os logs para confirmar funcionamento
+1. Execute o teste do respondido_em: `python test_respondido_em.py`
+2. Execute o teste rápido: `python test_webhook_quick.py`
+3. Execute o script de teste completo: `python test_webhook.py`
+4. Execute o teste de timezone: `python test_timezone_fix.py`
+5. Force a reconfiguração: `/telegram-force-setup`
+6. Envie uma mensagem de teste no Telegram
+7. Verifique se o alerta foi atualizado corretamente
+8. Confirme que aparece na categoria "Escaladas"
+9. Monitore os logs para confirmar funcionamento

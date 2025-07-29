@@ -189,7 +189,7 @@ async def telegram_webhook(request: Request):
             # Atualiza apenas os campos de previsão
             alerta.previsao = resposta
             alerta.previsao_datetime = previsao_dt
-            alerta.respondido_em = datetime.utcnow()
+            alerta.respondido_em = alerta.criado_em  # Usa o tempo real de criação do alerta
             alerta.nome_lider = nome_lider
             alerta.status = 'escalada'  # Muda status para escalada
             
