@@ -100,6 +100,16 @@
         <button class="tab-btn" onclick="abrirAba('auto-alert')">Alertas Automáticos</button>
     </div>
     <div id="alertas" class="tab-content active">
+        <div style="margin-bottom: 1em; padding: 1em; background: #f8f9fa; border-radius: 8px;">
+            <h3 style="margin: 0 0 0.5em 0; color: #dc3545;">⚠️ Ações Administrativas</h3>
+            <button class="btn btn-danger" onclick="apagarTodosAlertas()" style="margin-right: 0.5em;">
+                🗑️ Apagar Todos os Alertas
+            </button>
+            <span style="font-size: 0.9em; color: #666;">
+                Esta ação irá remover permanentemente todos os alertas do sistema.
+            </span>
+        </div>
+        
         <h2>Aguardando Previsão</h2>
         <div class="table-container">
             <table>
@@ -160,6 +170,17 @@
 
     <div id="auto-alert" class="tab-content">
         <h2>Controle de Alertas Automáticos</h2>
+        
+        <div style="margin-bottom: 1em; padding: 1em; background: #fff3cd; border: 1px solid #ffeaa7; border-radius: 8px;">
+            <h3 style="margin: 0 0 0.5em 0; color: #856404;">⚠️ Ações Administrativas</h3>
+            <button class="btn btn-danger" onclick="apagarTodosAlertas()" style="margin-right: 0.5em;">
+                🗑️ Apagar Todos os Alertas
+            </button>
+            <span style="font-size: 0.9em; color: #856404;">
+                Esta ação irá remover permanentemente todos os alertas do sistema.
+            </span>
+        </div>
+        
         <div class="auto-alert-controls">
             <div class="status-card">
                 <h3>Status Atual</h3>
@@ -373,6 +394,25 @@
             } catch (error) {
                 console.error('Erro ao fazer debug dos alertas:', error);
                 return null;
+            }
+        }
+
+        // Função para apagar todos os alertas
+        async function apagarTodosAlertas() {
+            if (confirm('Tem certeza que deseja apagar todos os alertas? Esta ação é irreversível.')) {
+                try {
+                    const response = await fetch('/alertas/all', { method: 'DELETE' });
+                    const result = await response.json();
+                    if (result.success) {
+                        mostrarNotificacao(`Todos os ${result.alertas_apagados} alertas foram apagados com sucesso!`, 'success');
+                        carregarAlertas(); // Recarrega a página para mostrar a tabela vazia
+                    } else {
+                        mostrarNotificacao('Erro ao apagar alertas: ' + result.message, 'error');
+                    }
+                } catch (error) {
+                    console.error('Erro ao apagar alertas:', error);
+                    mostrarNotificacao('Erro ao apagar alertas', 'error');
+                }
             }
         }
 

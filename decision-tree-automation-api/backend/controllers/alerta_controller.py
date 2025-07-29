@@ -263,3 +263,29 @@ def debug_alertas():
         return {"error": str(e)}
     finally:
         db.close() 
+
+@router.delete('/alertas/all')
+def apagar_todos_alertas():
+    """Apaga todos os alertas do sistema"""
+    db: Session = SessionLocal()
+    try:
+        # Conta quantos alertas existem antes de apagar
+        total_alertas = db.query(Alerta).count()
+        
+        # Apaga todos os alertas
+        db.query(Alerta).delete()
+        db.commit()
+        
+        logger.info(f"Todos os {total_alertas} alertas foram apagados")
+        
+        return {
+            "success": True,
+            "message": f"Todos os {total_alertas} alertas foram apagados com sucesso",
+            "alertas_apagados": total_alertas
+        }
+    except Exception as e:
+        logger.error(f"Erro ao apagar alertas: {str(e)}")
+        db.rollback()
+        raise HTTPException(status_code=500, detail=f"Erro interno: {str(e)}")
+    finally:
+        db.close() 

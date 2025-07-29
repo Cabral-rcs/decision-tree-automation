@@ -533,7 +533,32 @@ Cada alerta funciona como um objeto chave-valor com as seguintes chaves:
 
 ---
 
+### Ações Administrativas
 
+#### **Apagar Todos os Alertas**
+- **Localização**: Botão disponível em ambas as abas (Alertas e Alertas Automáticos)
+- **Endpoint**: `DELETE /alertas/all`
+- **Funcionalidade**: Remove permanentemente todos os alertas do sistema
+- **Confirmação**: Diálogo de confirmação antes da execução
+- **Feedback**: Notificação com número de alertas apagados
+- **Segurança**: Ação irreversível com aviso visual
+
+**Como usar:**
+1. Clique no botão "🗑️ Apagar Todos os Alertas"
+2. Confirme a ação no diálogo
+3. Aguarde a notificação de sucesso
+4. As tabelas serão atualizadas automaticamente
+
+**Resposta da API:**
+```json
+{
+  "success": true,
+  "message": "Todos os 15 alertas foram apagados com sucesso",
+  "alertas_apagados": 15
+}
+```
+
+---
 
 ## Fluxograma Completo do Sistema
 
