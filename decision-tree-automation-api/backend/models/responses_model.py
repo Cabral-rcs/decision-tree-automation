@@ -73,6 +73,4 @@ def set_aguardando_resposta(user_id: str):
 def is_aguardando_resposta(user_id: str):
     """Verifica se o usuário está aguardando resposta"""
     # Implementação simplificada - sempre retorna False
-    return False
-
-init_db() 
+    return False 

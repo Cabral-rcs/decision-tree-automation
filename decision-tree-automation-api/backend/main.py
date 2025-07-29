@@ -192,6 +192,82 @@ def debug_info():
         ]
     }
 
+@app.get("/database-status")
+def database_status():
+    """Endpoint para verificar o status das tabelas do banco de dados"""
+    try:
+        from backend.models.responses_model import SessionLocal
+        from backend.models.alerta_model import Alerta
+        from backend.models.auto_alert_config_model import AutoAlertConfig
+        from backend.models.responses_model import Response
+        from sqlalchemy import inspect
+        
+        db = SessionLocal()
+        inspector = inspect(db.bind)
+        
+        # Lista todas as tabelas existentes
+        tables = inspector.get_table_names()
+        
+        # Verifica se as tabelas principais existem
+        alertas_exists = 'alertas' in tables
+        auto_alert_config_exists = 'auto_alert_config' in tables
+        responses_exists = 'responses' in tables
+        estado_usuario_exists = 'estado_usuario' in tables
+        
+        # Conta registros em cada tabela
+        alertas_count = db.query(Alerta).count() if alertas_exists else 0
+        auto_alert_config_count = db.query(AutoAlertConfig).count() if auto_alert_config_exists else 0
+        responses_count = db.query(Response).count() if responses_exists else 0
+        
+        # Verifica estrutura das tabelas
+        alertas_columns = []
+        auto_alert_config_columns = []
+        responses_columns = []
+        
+        if alertas_exists:
+            alertas_columns = [col['name'] for col in inspector.get_columns('alertas')]
+        
+        if auto_alert_config_exists:
+            auto_alert_config_columns = [col['name'] for col in inspector.get_columns('auto_alert_config')]
+        
+        if responses_exists:
+            responses_columns = [col['name'] for col in inspector.get_columns('responses')]
+        
+        db.close()
+        
+        return {
+            "status": "success",
+            "tables": {
+                "all_tables": tables,
+                "alertas": {
+                    "exists": alertas_exists,
+                    "count": alertas_count,
+                    "columns": alertas_columns
+                },
+                "auto_alert_config": {
+                    "exists": auto_alert_config_exists,
+                    "count": auto_alert_config_count,
+                    "columns": auto_alert_config_columns
+                },
+                "responses": {
+                    "exists": responses_exists,
+                    "count": responses_count,
+                    "columns": responses_columns
+                },
+                "estado_usuario": {
+                    "exists": estado_usuario_exists
+                }
+            },
+            "database_url": "sqlite:///:memory:" if "memory" in os.environ.get("DATABASE_URL", "") else "configured"
+        }
+        
+    except Exception as e:
+        return {
+            "status": "error",
+            "error": str(e),
+            "message": "Erro ao verificar status do banco de dados"
+        }
+
 @app.get("/force-refresh")
 def force_refresh():
     """Endpoint para forçar refresh do frontend"""
@@ -363,6 +439,9 @@ def inicializar_sistema():
         
         AutoAlertConfigBase.metadata.drop_all(bind=engine, checkfirst=True)
         AutoAlertConfigBase.metadata.create_all(bind=engine)
+        
+        # Força a inicialização das tabelas
+        init_db()
         
         logger.info("✅ Banco de dados inicializado (dados zerados)")
         print("✅ Banco de dados inicializado (dados zerados)")
