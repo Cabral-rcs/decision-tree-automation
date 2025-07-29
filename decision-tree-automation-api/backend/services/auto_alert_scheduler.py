@@ -160,7 +160,7 @@ class AutoAlertScheduler:
             
             # Envia mensagem ao líder no Telegram
             try:
-                mensagem = f"Qual o prazo para {novo_alerta.operacao} da máquina {novo_alerta.equipamento}?\n\n(Responda apenas o horário no formato HH:MM)"
+                mensagem = f"Qual o prazo para {novo_alerta.operacao} da máquina {novo_alerta.equipamento}?\n\n(Responda apenas o horário no formato HH:MM)\n\nID do Alerta: {novo_alerta.id}"
                 payload = {
                     'chat_id': novo_alerta.chat_id,
                     'text': mensagem

@@ -56,10 +56,33 @@ async def telegram_webhook(request: Request):
         
         db = SessionLocal()
         try:
-            # Busca o alerta mais antigo sem previsão (ordem cronológica para vínculo correto)
-            alerta = db.query(Alerta).filter(
-                Alerta.previsao.is_(None)
-            ).order_by(Alerta.criado_em.asc()).first()
+            # Extrai o ID do alerta da mensagem anterior (se disponível)
+            alerta_id = None
+            
+            # Busca por padrão "ID do Alerta: X" na mensagem
+            import re
+            id_match = re.search(r'ID do Alerta: (\d+)', resposta)
+            if id_match:
+                alerta_id = int(id_match.group(1))
+                logger.info(f'ID do alerta extraído da mensagem: {alerta_id}')
+                print(f'🎯 ID do alerta extraído: {alerta_id}')
+            
+            # Se não encontrou ID na mensagem, busca o alerta mais antigo sem previsão
+            if alerta_id:
+                alerta = db.query(Alerta).filter(Alerta.id == alerta_id).first()
+                if not alerta:
+                    logger.warning(f'Alerta com ID {alerta_id} não encontrado')
+                    print(f'⚠️  Alerta com ID {alerta_id} não encontrado')
+                    alerta = None
+                elif alerta.previsao:
+                    logger.warning(f'Alerta {alerta_id} já possui previsão: {alerta.previsao}')
+                    print(f'⚠️  Alerta {alerta_id} já possui previsão: {alerta.previsao}')
+                    alerta = None
+            else:
+                # Busca o alerta mais antigo sem previsão (fallback)
+                alerta = db.query(Alerta).filter(
+                    Alerta.previsao.is_(None)
+                ).order_by(Alerta.criado_em.asc()).first()
             
             if not alerta:
                 logger.warning('Nenhum alerta pendente encontrado')
@@ -73,7 +96,7 @@ async def telegram_webhook(request: Request):
                 # Envia mensagem informando que não há alertas pendentes
                 payload = {
                     'chat_id': user_id,
-                    'text': 'Não há alertas pendentes aguardando previsão no momento.'
+                    'text': 'Não há alertas pendentes aguardando previsão no momento.\n\nSe você está respondendo a uma pergunta específica, certifique-se de incluir o ID do alerta na sua resposta.'
                 }
                 requests.post(f'{TELEGRAM_API_URL}/sendMessage', data=payload)
                 return {"status": "no_pending", "msg": "Nenhum alerta pendente"}
@@ -92,17 +115,20 @@ async def telegram_webhook(request: Request):
             
             print(f'📋 Total de alertas pendentes na fila: {total_pendentes}')
             
+            # Remove o ID do alerta da resposta antes de validar o formato
+            resposta_limpa = re.sub(r'ID do Alerta: \d+', '', resposta).strip()
+            
             # Validação do padrão HH:MM
             padrao = r'^(\d{2}):(\d{2})$'
-            match = re.match(padrao, resposta)
+            match = re.match(padrao, resposta_limpa)
             if not match:
-                logger.warning(f'Formato inválido de resposta: {resposta}')
-                print(f'❌ Formato inválido: {resposta}')
+                logger.warning(f'Formato inválido de resposta: {resposta_limpa}')
+                print(f'❌ Formato inválido: {resposta_limpa}')
                 
                 # Pede novamente com instruções claras
                 payload = {
                     'chat_id': user_id,
-                    'text': f'Por favor, informe a previsão apenas no formato HH:MM (ex: 15:30).\n\nAlerta pendente: {alerta.problema[:100]}...\n\nAlertas na fila: {total_pendentes}'
+                    'text': f'Por favor, informe a previsão apenas no formato HH:MM (ex: 15:30).\n\nAlerta ID: {alerta.id}\nProblema: {alerta.problema[:100]}...\n\nAlertas na fila: {total_pendentes}'
                 }
                 requests.post(f'{TELEGRAM_API_URL}/sendMessage', data=payload)
                 return {"status": "invalid_format", "msg": "Formato inválido"}
@@ -111,15 +137,15 @@ async def telegram_webhook(request: Request):
             hora, minuto = match.groups()
             previsao_dt = msg_br.replace(hour=int(hora), minute=int(minuto), second=0, microsecond=0)
             
-            logger.info(f'Previsão processada: {resposta} -> {previsao_dt}')
-            print(f'⏰ Previsão processada: {resposta} -> {previsao_dt}')
+            logger.info(f'Previsão processada: {resposta_limpa} -> {previsao_dt}')
+            print(f'⏰ Previsão processada: {resposta_limpa} -> {previsao_dt}')
             
             # Atualiza o alerta específico com a previsão (ordinal - um por vez)
             logger.info(f'Atualizando alerta {alerta.id} com previsão: {resposta}')
             print(f'🔄 Atualizando alerta {alerta.id} com previsão: {resposta}')
             
             # Preenche a chave "Previsão" do alerta específico
-            alerta.previsao = resposta  # Valor da resposta do líder
+            alerta.previsao = resposta_limpa  # Valor da resposta do líder (limpo)
             alerta.previsao_datetime = previsao_dt  # DateTime da previsão
             alerta.respondido_em = datetime.utcnow()
             alerta.nome_lider = nome_lider
@@ -147,10 +173,10 @@ async def telegram_webhook(request: Request):
             ).count()
             
             # Confirmação para o líder
-            mensagem_confirmacao = f'✅ Previsão registrada: {resposta}\n\n'
+            mensagem_confirmacao = f'✅ Previsão registrada: {resposta_limpa}\n\n'
             mensagem_confirmacao += f'Alerta ID: {alerta.id}\n'
             mensagem_confirmacao += f'Problema: {alerta.problema[:100]}...\n\n'
-            mensagem_confirmacao += f'O alerta foi movido para "Escaladas" e será monitorado até {resposta}.\n\n'
+            mensagem_confirmacao += f'O alerta foi movido para "Escaladas" e será monitorado até {resposta_limpa}.\n\n'
             
             if alertas_restantes > 0:
                 mensagem_confirmacao += f'⚠️  Ainda há {alertas_restantes} alerta(s) pendente(s) na fila.'
@@ -170,11 +196,11 @@ async def telegram_webhook(request: Request):
                 print(f'❌ Erro ao enviar confirmação')
             
             # Armazena também como resposta geral (opcional)
-            if user_id and resposta and msg_utc:
+            if user_id and resposta_limpa and msg_utc:
                 add_response({
                     'user_id': str(user_id),
                     'pergunta': alerta.problema,
-                    'resposta': resposta,
+                    'resposta': resposta_limpa,
                     'timestamp': msg_utc.isoformat()
                 })
             
@@ -182,6 +208,7 @@ async def telegram_webhook(request: Request):
                 "status": "success", 
                 "msg": "Previsão registrada com sucesso", 
                 "alerta_id": alerta.id,
+                "id_usado": alerta_id if alerta_id else "fallback",
                 "alertas_restantes": alertas_restantes
             }
             
