@@ -49,7 +49,7 @@ async def telegram_webhook(request: Request):
         
         db = SessionLocal()
         try:
-            # Busca alerta pendente (sem previsão) - ordem cronológica para vínculo ordinal
+            # Busca o alerta mais antigo sem previsão (ordem cronológica para vínculo correto)
             alerta = db.query(Alerta).filter(
                 Alerta.previsao.is_(None)
             ).order_by(Alerta.criado_em.asc()).first()
@@ -96,12 +96,13 @@ async def telegram_webhook(request: Request):
             logger.info(f'Previsão processada: {resposta} -> {previsao_dt}')
             print(f'⏰ Previsão processada: {resposta} -> {previsao_dt}')
             
-            # Atualiza o alerta com a previsão (não o prazo)
+            # Atualiza o alerta específico com a previsão (chave-valor)
             logger.info(f'Atualizando alerta {alerta.id} com previsão: {resposta}')
             print(f'🔄 Atualizando alerta {alerta.id} com previsão: {resposta}')
             
-            alerta.previsao = resposta
-            alerta.previsao_datetime = previsao_dt
+            # Preenche a chave "Previsão" do alerta específico
+            alerta.previsao = resposta  # Valor da resposta do líder
+            alerta.previsao_datetime = previsao_dt  # DateTime da previsão
             alerta.respondido_em = datetime.utcnow()
             alerta.nome_lider = nome_lider
             
@@ -114,6 +115,7 @@ async def telegram_webhook(request: Request):
             if alerta_atualizado and alerta_atualizado.previsao:
                 logger.info(f'✅ Alerta {alerta.id} atualizado com sucesso - Previsão: {alerta_atualizado.previsao}')
                 print(f'✅ Alerta {alerta.id} atualizado com sucesso - Previsão: {alerta_atualizado.previsao}')
+                print(f'✅ Alerta movido de "Pendentes" para "Escaladas"')
             else:
                 logger.error(f'❌ Falha ao atualizar alerta {alerta.id}')
                 print(f'❌ Falha ao atualizar alerta {alerta.id}')
@@ -122,7 +124,7 @@ async def telegram_webhook(request: Request):
             # Confirmação para o líder
             payload = {
                 'chat_id': user_id,
-                'text': f'✅ Previsão registrada: {resposta}\n\nAlerta: {alerta.problema[:100]}...\n\nO alerta será monitorado até este horário.'
+                'text': f'✅ Previsão registrada: {resposta}\n\nAlerta ID: {alerta.id}\nProblema: {alerta.problema[:100]}...\n\nO alerta foi movido para "Escaladas" e será monitorado até este horário.'
             }
             resp_telegram = requests.post(f'{TELEGRAM_API_URL}/sendMessage', data=payload, timeout=10)
             if resp_telegram.ok:
@@ -141,7 +143,7 @@ async def telegram_webhook(request: Request):
                     'timestamp': msg_utc.isoformat()
                 })
             
-            return {"status": "success", "msg": "Previsão registrada com sucesso"}
+            return {"status": "success", "msg": "Previsão registrada com sucesso", "alerta_id": alerta.id}
             
         except Exception as e:
             logger.error(f'Erro ao processar alerta: {str(e)}')

@@ -126,15 +126,15 @@ def listar_alertas():
         logger.info(f"Listando alertas - horário atual: {now}")
         
         for alerta in db.query(Alerta).order_by(Alerta.criado_em.desc()).all():
-            logger.info(f"Processando alerta ID {alerta.id}: previsao_datetime={alerta.previsao_datetime}, status_operacao={alerta.status_operacao}")
+            logger.info(f"Processando alerta ID {alerta.id}: previsao={alerta.previsao}, status_operacao={alerta.status_operacao}")
             
-            # Aguardando Previsão: Sem previsão respondida pelo líder
-            if not alerta.previsao_datetime:
+            # Modelo chave-valor: se não tem previsão, está pendente
+            if not alerta.previsao:
                 pendentes.append(alerta)
-                logger.info(f"Alerta {alerta.id} adicionado aos pendentes")
+                logger.info(f"Alerta {alerta.id} adicionado aos pendentes (sem previsão)")
                 continue
             
-            # Se tem previsão, verifica as outras categorias
+            # Se tem previsão, verifica as outras categorias baseado no status de operação
             if alerta.status_operacao == 'operando':
                 # Encerradas: Previsão não excedida e status operando
                 if alerta.previsao_datetime >= now:
@@ -147,13 +147,13 @@ def listar_alertas():
             else:
                 # Status não operando
                 if alerta.previsao_datetime >= now:
-                    # Escaladas: Previsão respondida, atual dentro da previsão e status não operando
+                    # Escaladas: Com previsão, dentro da previsão e status não operando
                     escaladas.append(alerta)
-                    logger.info(f"Alerta {alerta.id} adicionado aos escalados")
+                    logger.info(f"Alerta {alerta.id} adicionado aos escalados (com previsão: {alerta.previsao})")
                 else:
                     # Atrasadas: Previsão excedida e status não operando
                     atrasadas.append(alerta)
-                    logger.info(f"Alerta {alerta.id} adicionado aos atrasados")
+                    logger.info(f"Alerta {alerta.id} adicionado aos atrasados (previsão excedida)")
         
         return {
             "pendentes": [
@@ -163,7 +163,7 @@ def listar_alertas():
                     "equipamento": a.equipamento, "codigo_equipamento": a.codigo_equipamento, "tipo_operacao": a.tipo_operacao,
                     "operacao": a.operacao, "nome_operador": a.nome_operador, "data_operacao": a.data_operacao,
                     "tempo_abertura": a.tempo_abertura, "tipo_arvore": a.tipo_arvore, "justificativa": a.justificativa,
-                    "status_operacao": a.status_operacao
+                    "status_operacao": a.status_operacao, "previsao": None  # Sempre None para pendentes
                 } for a in pendentes
             ],
             "escaladas": [
@@ -236,8 +236,8 @@ def debug_alertas():
     db = SessionLocal()
     try:
         total_alertas = db.query(Alerta).count()
-        pendentes = db.query(Alerta).filter(Alerta.previsao_datetime.is_(None)).count()
-        com_previsao = db.query(Alerta).filter(Alerta.previsao_datetime.isnot(None)).count()
+        pendentes = db.query(Alerta).filter(Alerta.previsao.is_(None)).count()
+        com_previsao = db.query(Alerta).filter(Alerta.previsao.isnot(None)).count()
         
         # Últimos 5 alertas
         ultimos_alertas = db.query(Alerta).order_by(Alerta.criado_em.desc()).limit(5).all()
@@ -250,6 +250,7 @@ def debug_alertas():
                 {
                     "id": a.id,
                     "problema": a.problema[:50] + "..." if len(a.problema) > 50 else a.problema,
+                    "previsao": a.previsao,  # Valor da chave previsão
                     "previsao_datetime": a.previsao_datetime.isoformat() if a.previsao_datetime else None,
                     "respondido_em": a.respondido_em.isoformat() if a.respondido_em else None,
                     "status_operacao": a.status_operacao,

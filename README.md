@@ -465,47 +465,71 @@ Os alertas automáticos incluem:
 
 ---
 
-## Regras de Negócio Atualizadas
+## Modelo Chave-Valor dos Alertas
 
-### Categorização de Alertas
+### Estrutura do Alerta
 
-O sistema categoriza alertas em 4 grupos baseados na **previsão** fornecida pelo líder:
+Cada alerta funciona como um objeto chave-valor com as seguintes chaves:
+
+```javascript
+{
+  "id": 1,
+  "codigo": "12345",
+  "unidade": "Unidade Barra Bonita",
+  "frente": "Frente de Colheita",
+  "equipamento": "Colheitadeira JD9870",
+  "tipo_operacao": "Manutenção Preventiva",
+  "operacao": "Troca de Filtro de Ar",
+  "operador": "Rafael Cabral",
+  "data_operacao": "2024-12-19T10:30:00",
+  "tempo_abertura": "2h 15min",
+  "tipo_arvore": "Árvore de Manutenção",
+  "justificativa": null,
+  "lider": "Rafael Cabral",
+  "problema": "Equipamento apresentando baixa eficiência",
+  "status": "pendente",
+  "criado_em": "2024-12-19T08:15:00",
+  "previsao": null  // ← Chave que será preenchida pelo líder
+}
+```
+
+### Fluxo de Preenchimento da Chave "Previsão"
+
+1. **Criação**: Alerta criado com `previsao: null`
+2. **Envio**: Mensagem enviada ao líder via Telegram
+3. **Resposta**: Líder responde com formato HH:MM
+4. **Associação**: Webhook associa resposta ao alerta mais antigo sem previsão
+5. **Preenchimento**: Chave `previsao` é preenchida com o valor da resposta
+6. **Movimento**: Alerta move de "Pendentes" para "Escaladas"
+
+### Regras de Negócio Atualizadas
 
 #### **1. Pendentes (Aguardando Previsão)**
-- **Condição**: Sem previsão respondida pelo líder
-- **Campo**: `previsao_datetime` é NULL
+- **Condição**: `previsao` é `null`
+- **Interface**: Mostra "Aguardando resposta" na coluna Previsão
 - **Ação**: Aguarda resposta do líder via Telegram
 
 #### **2. Escaladas**
-- **Condição**: Com previsão, dentro da previsão, status "não operando"
-- **Campo**: `previsao_datetime >= now` AND `status_operacao = 'não operando'`
+- **Condição**: `previsao` tem valor AND `previsao_datetime >= now` AND `status_operacao = 'não operando'`
+- **Interface**: Mostra valor da previsão em azul
 - **Ação**: Monitoramento até a previsão
 
 #### **3. Atrasadas**
-- **Condição**: Previsão excedida, status "não operando"
-- **Campo**: `previsao_datetime < now` AND `status_operacao = 'não operando'`
+- **Condição**: `previsao` tem valor AND `previsao_datetime < now` AND `status_operacao = 'não operando'`
+- **Interface**: Mostra valor da previsão em vermelho
 - **Ação**: Requer atenção imediata
 
 #### **4. Encerradas**
-- **Condição**: Previsão não excedida, status "operando"
-- **Campo**: `previsao_datetime >= now` AND `status_operacao = 'operando'`
+- **Condição**: `previsao` tem valor AND `previsao_datetime >= now` AND `status_operacao = 'operando'`
+- **Interface**: Mostra valor da previsão em verde
 - **Ação**: Problema resolvido
 
 ### Vínculo Alerta-Previsão
 
-- **Ordem Cronológica**: O webhook associa a previsão ao alerta mais antigo sem previsão
-- **Campo Principal**: `previsao_datetime` (datetime com timezone)
-- **Campo Auxiliar**: `previsao` (string HH:MM)
-- **Campo Removido**: `prazo` (não mais utilizado)
-
-### Fluxo de Processamento
-
-1. **Criação**: Alerta criado com `previsao_datetime = NULL`
-2. **Envio**: Mensagem enviada ao líder via Telegram
-3. **Resposta**: Líder responde com formato HH:MM
-4. **Processamento**: Webhook atualiza `previsao` e `previsao_datetime`
-5. **Categorização**: Alerta move de "Pendentes" para "Escaladas"
-6. **Monitoramento**: Sistema verifica se previsão foi excedida
+- **Ordem Cronológica**: Webhook busca o alerta mais antigo sem previsão
+- **Associação Direta**: Resposta do líder preenche a chave `previsao` do alerta específico
+- **Movimento Automático**: Alerta sai de "Pendentes" e vai para "Escaladas"
+- **Rastreabilidade**: Cada previsão está vinculada ao alerta de origem
 
 ---
 

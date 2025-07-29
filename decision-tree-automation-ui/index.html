@@ -108,7 +108,7 @@
                         <th>ID</th><th>Código</th><th>Unidade</th><th>Frente</th><th>Equipamento</th>
                         <th>Tipo Operação</th><th>Operação</th><th>Operador</th><th>Data Operação</th>
                         <th>Tempo Abertura</th><th>Tipo Árvore</th><th>Justificativa</th>
-                        <th>Líder</th><th>Problema</th><th>Status</th><th>Criado em</th>
+                        <th>Líder</th><th>Problema</th><th>Previsão</th><th>Status</th><th>Criado em</th>
                     </tr>
                 </thead>
                 <tbody id="pendentes-body"></tbody>
@@ -510,6 +510,7 @@
                     <td>${a.justificativa || '-'}</td>
                     <td>${a.nome_lider || '-'}</td>
                     <td>${a.problema || '-'}</td>
+                    <td><span style="color: #999; font-style: italic;">Aguardando resposta</span></td>
                     <td><span class="status-${a.status_operacao ? a.status_operacao.replace(' ', '-') : 'nao-operando'}">${a.status_operacao || 'não operando'}</span></td>
                     <td>${a.criado_em ? new Date(a.criado_em).toLocaleString() : '-'}</td>
                 `;
@@ -539,7 +540,7 @@
                     <td>${a.justificativa || '-'}</td>
                     <td>${a.nome_lider || '-'}</td>
                     <td>${a.problema || '-'}</td>
-                    <td>${a.previsao || '-'}</td>
+                    <td><span style="color: #007bff; font-weight: bold;">${a.previsao || '-'}</span></td>
                     <td><span class="status-${a.status_operacao ? a.status_operacao.replace(' ', '-') : 'nao-operando'}">${a.status_operacao || 'não operando'}</span> ${statusButton(a)}</td>
                     <td>${a.respondido_em ? new Date(a.respondido_em).toLocaleString() : '-'}</td>
                 `;
@@ -568,7 +569,7 @@
                     <td>${a.justificativa || '-'}</td>
                     <td>${a.nome_lider || '-'}</td>
                     <td>${a.problema || '-'}</td>
-                    <td>${a.previsao || '-'}</td>
+                    <td><span style="color: #dc3545; font-weight: bold;">${a.previsao || '-'}</span></td>
                     <td><span class="status-${a.status_operacao ? a.status_operacao.replace(' ', '-') : 'nao-operando'}">${a.status_operacao || 'não operando'}</td>
                     <td>${a.respondido_em ? new Date(a.respondido_em).toLocaleString() : '-'}</td>
                 `;
@@ -597,7 +598,7 @@
                     <td>${a.justificativa || '-'}</td>
                     <td>${a.nome_lider || '-'}</td>
                     <td>${a.problema || '-'}</td>
-                    <td>${a.previsao || '-'}</td>
+                    <td><span style="color: #28a745; font-weight: bold;">${a.previsao || '-'}</span></td>
                     <td><span class="status-${a.status_operacao ? a.status_operacao.replace(' ', '-') : 'operando'}">${a.status_operacao || 'operando'}</span> ${statusButton(a)}</td>
                     <td>${a.respondido_em ? new Date(a.respondido_em).toLocaleString() : '-'}</td>
                     <td>${a.horario_operando ? new Date(a.horario_operando).toLocaleString() : '-'}</td>
