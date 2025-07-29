@@ -232,6 +232,11 @@
         }
         
         function statusButton(a) {
+            // Não mostra botão para alertas encerrados (status operando fixo)
+            if (a.status_operacao === 'operando' && a.horario_operando) {
+                return '';
+            }
+            
             const currentStatus = a.status_operacao || 'não operando';
             const next = currentStatus === 'operando' ? 'não operando' : 'operando';
             const label = currentStatus === 'operando' ? 'Não operando' : 'Operando';
@@ -527,11 +532,26 @@
                     <td>${a.nome_operador || '-'}</td>
                     <td>${a.problema || '-'}</td>
                     <td><span style="color: #dc3545; font-weight: bold;">${a.previsao || '-'}</span></td>
-                    <td><span class="status-${a.status_operacao ? a.status_operacao.replace(' ', '-') : 'nao-operando'}">${a.status_operacao || 'não operando'}</span></td>
+                    <td><span class="status-${a.status_operacao ? a.status_operacao.replace(' ', '-') : 'nao-operando'}">${a.status_operacao || 'não operando'}</span> ${statusButton(a)}</td>
                     <td>${a.respondido_em ? new Date(a.respondido_em).toLocaleString() : '-'}</td>
                 `;
                 tbody.appendChild(row);
             });
+        }
+
+        // Função para determinar a origem do alerta encerrado
+        function getEncerradoBackground(a) {
+            // Se tem horario_operando, significa que foi resolvido (mudou de status)
+            // Se não tem horario_operando mas tem previsao_datetime, veio direto de escaladas
+            if (a.horario_operando) {
+                // Verifica se a previsão foi excedida (veio de atrasadas)
+                const previsao = new Date(a.previsao_datetime);
+                const horarioOperando = new Date(a.horario_operando);
+                if (horarioOperando > previsao) {
+                    return 'background-color: #ffe6e6;'; // Vermelho claro - veio de atrasadas
+                }
+            }
+            return 'background-color: #e6ffe6;'; // Verde claro - veio de escaladas
         }
 
         function renderizarTabelaEncerradas(encerradas) {
@@ -540,6 +560,7 @@
             
             encerradas.forEach(a => {
                 const row = document.createElement('tr');
+                row.style.cssText = getEncerradoBackground(a);
                 row.innerHTML = `
                     <td>${a.id || '-'}</td>
                     <td>${a.codigo || '-'}</td>

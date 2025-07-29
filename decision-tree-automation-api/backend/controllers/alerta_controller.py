@@ -95,9 +95,9 @@ def atualizar_status_operacao(alerta_id: int, body: dict):
         if novo_status == 'operando':
             tz_br = pytz.timezone('America/Sao_Paulo')
             alerta.horario_operando = datetime.now(tz_br)
-        # Se mudou para operando, vai para encerradas
-        if novo_status == 'operando' and alerta.status == 'escalada':
-            alerta.status = 'encerrada'
+            # Se mudou para operando, vai para encerradas (tanto de escalada quanto de atrasada)
+            if alerta.status in ['escalada', 'atrasada']:
+                alerta.status = 'encerrada'
         
         db.commit()
         logger.info(f"Status do alerta {alerta_id} atualizado para {novo_status}")
