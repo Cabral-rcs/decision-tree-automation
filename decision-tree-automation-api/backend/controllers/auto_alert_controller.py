@@ -80,7 +80,8 @@ def toggle_auto_alert():
         
         return {
             "is_active": config.is_active,
-            "message": f"Criação automática de alertas {status}"
+            "message": f"Criação automática de alertas {status}",
+            "updated_at": config.updated_at.isoformat() if config.updated_at else None
         }
     except Exception as e:
         logger.error(f"Erro ao alternar status dos alertas automáticos: {str(e)}")
@@ -151,7 +152,10 @@ def create_alert_now():
         return {
             "success": True,
             "alert_id": novo_alerta.id,
-            "alert_data": alert_data,
+            "alert_data": {
+                **alert_data,
+                "data_operacao": alert_data.get('data_operacao').isoformat() if alert_data.get('data_operacao') else None
+            },
             "message": "Alerta automático criado com sucesso"
         }
     except HTTPException:
@@ -219,7 +223,8 @@ def update_interval(interval_minutes: int):
         
         return {
             "interval_minutes": config.interval_minutes,
-            "message": f"Intervalo atualizado para {interval_minutes} minutos"
+            "message": f"Intervalo atualizado para {interval_minutes} minutos",
+            "updated_at": config.updated_at.isoformat() if config.updated_at else None
         }
     except Exception as e:
         logger.error(f"Erro ao atualizar intervalo: {str(e)}")

@@ -99,7 +99,7 @@ class MockDataGenerator:
             "tipo_operacao": tipo_operacao,
             "operacao": operacao,
             "nome_operador": "Rafael Cabral",
-            "data_operacao": data_operacao.isoformat(),  # Formato ISO para compatibilidade
+            "data_operacao": data_operacao,  # Objeto datetime, não string
             "tempo_abertura": tempo_abertura_str,
             "tipo_arvore": "Árvore de Manutenção",
             "justificativa": None,  # Campo não preenchido automaticamente

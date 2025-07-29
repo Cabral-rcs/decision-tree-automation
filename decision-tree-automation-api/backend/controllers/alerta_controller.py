@@ -156,37 +156,37 @@ def listar_alertas():
         return {
             "pendentes": [
                 {
-                    "id": a.id, "chat_id": a.chat_id, "problema": a.problema, "criado_em": a.criado_em, 
+                    "id": a.id, "chat_id": a.chat_id, "problema": a.problema, "criado_em": a.criado_em.isoformat() if a.criado_em else None, 
                     "nome_lider": a.nome_lider, "status_operacao": a.status_operacao, "previsao": None,
                     "codigo": a.codigo, "unidade": a.unidade, "frente": a.frente, "equipamento": a.equipamento, "codigo_equipamento": a.codigo_equipamento,
-                    "tipo_operacao": a.tipo_operacao, "operacao": a.operacao, "nome_operador": a.nome_operador, "data_operacao": a.data_operacao, "tempo_abertura": a.tempo_abertura,
+                    "tipo_operacao": a.tipo_operacao, "operacao": a.operacao, "nome_operador": a.nome_operador, "data_operacao": a.data_operacao.isoformat() if a.data_operacao else None, "tempo_abertura": a.tempo_abertura,
                     "tipo_arvore": a.tipo_arvore, "justificativa": a.justificativa
                 } for a in pendentes
             ],
             "escaladas": [
                 {
                     "id": a.id, "chat_id": a.chat_id, "problema": a.problema, "previsao": a.previsao, 
-                    "previsao_datetime": a.previsao_datetime, "respondido_em": a.respondido_em, "nome_lider": a.nome_lider, 
+                    "previsao_datetime": a.previsao_datetime.isoformat() if a.previsao_datetime else None, "respondido_em": a.respondido_em.isoformat() if a.respondido_em else None, "nome_lider": a.nome_lider, 
                     "status_operacao": a.status_operacao, "codigo": a.codigo, "unidade": a.unidade, "frente": a.frente, "equipamento": a.equipamento, "codigo_equipamento": a.codigo_equipamento,
-                    "tipo_operacao": a.tipo_operacao, "operacao": a.operacao, "nome_operador": a.nome_operador, "data_operacao": a.data_operacao, "tempo_abertura": a.tempo_abertura,
+                    "tipo_operacao": a.tipo_operacao, "operacao": a.operacao, "nome_operador": a.nome_operador, "data_operacao": a.data_operacao.isoformat() if a.data_operacao else None, "tempo_abertura": a.tempo_abertura,
                     "tipo_arvore": a.tipo_arvore, "justificativa": a.justificativa
                 } for a in escaladas
             ],
             "atrasadas": [
                 {
                     "id": a.id, "chat_id": a.chat_id, "problema": a.problema, "previsao": a.previsao, 
-                    "previsao_datetime": a.previsao_datetime, "respondido_em": a.respondido_em, "nome_lider": a.nome_lider, 
+                    "previsao_datetime": a.previsao_datetime.isoformat() if a.previsao_datetime else None, "respondido_em": a.respondido_em.isoformat() if a.respondido_em else None, "nome_lider": a.nome_lider, 
                     "status_operacao": a.status_operacao, "codigo": a.codigo, "unidade": a.unidade, "frente": a.frente, "equipamento": a.equipamento, "codigo_equipamento": a.codigo_equipamento,
-                    "tipo_operacao": a.tipo_operacao, "operacao": a.operacao, "nome_operador": a.nome_operador, "data_operacao": a.data_operacao, "tempo_abertura": a.tempo_abertura,
+                    "tipo_operacao": a.tipo_operacao, "operacao": a.operacao, "nome_operador": a.nome_operador, "data_operacao": a.data_operacao.isoformat() if a.data_operacao else None, "tempo_abertura": a.tempo_abertura,
                     "tipo_arvore": a.tipo_arvore, "justificativa": a.justificativa
                 } for a in atrasadas
             ],
             "encerradas": [
                 {
                     "id": a.id, "chat_id": a.chat_id, "problema": a.problema, "previsao": a.previsao, 
-                    "previsao_datetime": a.previsao_datetime, "respondido_em": a.respondido_em, "nome_lider": a.nome_lider, 
-                    "status_operacao": a.status_operacao, "horario_operando": a.horario_operando, "codigo": a.codigo, "unidade": a.unidade, "frente": a.frente, "equipamento": a.equipamento, "codigo_equipamento": a.codigo_equipamento,
-                    "tipo_operacao": a.tipo_operacao, "operacao": a.operacao, "nome_operador": a.nome_operador, "data_operacao": a.data_operacao, "tempo_abertura": a.tempo_abertura,
+                    "previsao_datetime": a.previsao_datetime.isoformat() if a.previsao_datetime else None, "respondido_em": a.respondido_em.isoformat() if a.respondido_em else None, "nome_lider": a.nome_lider, 
+                    "status_operacao": a.status_operacao, "horario_operando": a.horario_operando.isoformat() if a.horario_operando else None, "codigo": a.codigo, "unidade": a.unidade, "frente": a.frente, "equipamento": a.equipamento, "codigo_equipamento": a.codigo_equipamento,
+                    "tipo_operacao": a.tipo_operacao, "operacao": a.operacao, "nome_operador": a.nome_operador, "data_operacao": a.data_operacao.isoformat() if a.data_operacao else None, "tempo_abertura": a.tempo_abertura,
                     "tipo_arvore": a.tipo_arvore, "justificativa": a.justificativa
                 } for a in encerradas
             ]
@@ -213,7 +213,7 @@ def forcar_atualizacao():
             "message": "Atualização forçada",
             "total_alertas": total_alertas,
             "alertas_com_previsao": alertas_com_previsao,
-            "timestamp": datetime.now().isoformat()
+            "timestamp": datetime.now().isoformat() if datetime.now() else None
         }
     except Exception as e:
         logger.error(f"Erro ao forçar atualização: {str(e)}")
@@ -254,7 +254,7 @@ def get_ultima_atualizacao():
             campo_mais_recente, timestamp_mais_recente, alerta_id = timestamps[0]
             
             return {
-                "ultima_atualizacao": timestamp_mais_recente.isoformat(),
+                "ultima_atualizacao": timestamp_mais_recente.isoformat() if timestamp_mais_recente else None,
                 "alerta_id": alerta_id,
                 "campo_atualizado": campo_mais_recente,
                 "tem_atualizacao": True
