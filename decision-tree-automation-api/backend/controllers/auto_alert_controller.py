@@ -103,25 +103,13 @@ def create_alert_now():
         nome_lider = "Rafael Cabral"
         chat_id = "6435800936"
         
-        # Criar alerta com todos os dados
+        # Criar alerta com campos essenciais
         novo_alerta = Alerta(
             chat_id=chat_id,
             problema=alert_data['problema'],
             status='pendente',
-            nome_lider=nome_lider,
-            codigo=alert_data.get('codigo'),
-            unidade=alert_data.get('unidade'),
-            frente=alert_data.get('frente'),
-            equipamento=alert_data.get('equipamento'),
-            codigo_equipamento=alert_data.get('codigo_equipamento'),
-            tipo_operacao=alert_data.get('tipo_operacao'),
-            operacao=alert_data.get('operacao'),
-            nome_operador=alert_data.get('nome_operador'),
-            data_operacao=datetime.fromisoformat(alert_data.get('data_operacao')) if alert_data.get('data_operacao') else None,
-            tempo_abertura=alert_data.get('tempo_abertura'),
-            tipo_arvore=alert_data.get('tipo_arvore'),
-            justificativa=None,  # Campo não preenchido automaticamente
-            prazo=None  # Campo não preenchido automaticamente
+            status_operacao='não operando',
+            nome_lider=nome_lider
         )
         db.add(novo_alerta)
         db.commit()
@@ -129,7 +117,7 @@ def create_alert_now():
         
         # Envia mensagem ao líder no Telegram
         try:
-            mensagem = f"Qual o prazo para {novo_alerta.operacao} da máquina {novo_alerta.equipamento}?\n\n(Responda apenas o horário no formato HH:MM)"
+            mensagem = f"Qual o prazo para resolução do problema?\n\n{novo_alerta.problema}\n\n(Responda apenas o horário no formato HH:MM)"
             payload = {
                 'chat_id': novo_alerta.chat_id,
                 'text': mensagem

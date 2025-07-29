@@ -24,27 +24,13 @@ def criar_alerta(alerta: dict):
         nome_lider = 'Rafael Cabral'
         chat_id = '6435800936'
         
-        # Criar alerta com todos os campos disponíveis
+        # Criar alerta com campos essenciais
         novo_alerta = Alerta(
             chat_id=chat_id,
             problema=alerta['problema'],
             status='pendente',
             status_operacao='não operando',  # Status inicial
-            nome_lider=nome_lider,
-            # Novos campos se disponíveis
-            codigo=alerta.get('codigo'),
-            unidade=alerta.get('unidade'),
-            frente=alerta.get('frente'),
-            equipamento=alerta.get('equipamento'),
-            codigo_equipamento=alerta.get('codigo_equipamento'),
-            tipo_operacao=alerta.get('tipo_operacao'),
-            operacao=alerta.get('operacao'),
-            nome_operador=alerta.get('nome_operador'),
-            data_operacao=datetime.fromisoformat(alerta.get('data_operacao')) if alerta.get('data_operacao') else None,
-            tempo_abertura=alerta.get('tempo_abertura'),
-            tipo_arvore=alerta.get('tipo_arvore'),
-            justificativa=None,  # Campo não preenchido automaticamente
-            prazo=None  # Campo não preenchido automaticamente
+            nome_lider=nome_lider
         )
         logger.info(f"Criando alerta: problema={alerta['problema']}, status_operacao=não operando")
         db.add(novo_alerta)
@@ -53,7 +39,7 @@ def criar_alerta(alerta: dict):
         
         # Envia mensagem ao líder no Telegram
         try:
-            mensagem = f"Qual o prazo para {novo_alerta.operacao or 'resolução'} da máquina {novo_alerta.equipamento or 'equipamento'}?\n\n(Responda apenas o horário no formato HH:MM)"
+            mensagem = f"Qual o prazo para resolução do problema?\n\n{novo_alerta.problema}\n\n(Responda apenas o horário no formato HH:MM)"
             payload = {
                 'chat_id': novo_alerta.chat_id,
                 'text': mensagem
@@ -159,42 +145,28 @@ def listar_alertas():
             "pendentes": [
                 {
                     "id": a.id, "chat_id": a.chat_id, "problema": a.problema, "criado_em": a.criado_em, 
-                    "nome_lider": a.nome_lider, "codigo": a.codigo, "unidade": a.unidade, "frente": a.frente,
-                    "equipamento": a.equipamento, "codigo_equipamento": a.codigo_equipamento, "tipo_operacao": a.tipo_operacao,
-                    "operacao": a.operacao, "nome_operador": a.nome_operador, "data_operacao": a.data_operacao,
-                    "tempo_abertura": a.tempo_abertura, "tipo_arvore": a.tipo_arvore, "justificativa": a.justificativa,
-                    "status_operacao": a.status_operacao, "previsao": None  # Sempre None para pendentes
+                    "nome_lider": a.nome_lider, "status_operacao": a.status_operacao, "previsao": None
                 } for a in pendentes
             ],
             "escaladas": [
                 {
                     "id": a.id, "chat_id": a.chat_id, "problema": a.problema, "previsao": a.previsao, 
                     "previsao_datetime": a.previsao_datetime, "respondido_em": a.respondido_em, "nome_lider": a.nome_lider, 
-                    "status_operacao": a.status_operacao, "codigo": a.codigo, "unidade": a.unidade, "frente": a.frente,
-                    "equipamento": a.equipamento, "codigo_equipamento": a.codigo_equipamento, "tipo_operacao": a.tipo_operacao,
-                    "operacao": a.operacao, "nome_operador": a.nome_operador, "data_operacao": a.data_operacao,
-                    "tempo_abertura": a.tempo_abertura, "tipo_arvore": a.tipo_arvore, "justificativa": a.justificativa
+                    "status_operacao": a.status_operacao
                 } for a in escaladas
             ],
             "atrasadas": [
                 {
                     "id": a.id, "chat_id": a.chat_id, "problema": a.problema, "previsao": a.previsao, 
                     "previsao_datetime": a.previsao_datetime, "respondido_em": a.respondido_em, "nome_lider": a.nome_lider, 
-                    "status_operacao": a.status_operacao, "codigo": a.codigo, "unidade": a.unidade, "frente": a.frente,
-                    "equipamento": a.equipamento, "codigo_equipamento": a.codigo_equipamento, "tipo_operacao": a.tipo_operacao,
-                    "operacao": a.operacao, "nome_operador": a.nome_operador, "data_operacao": a.data_operacao,
-                    "tempo_abertura": a.tempo_abertura, "tipo_arvore": a.tipo_arvore, "justificativa": a.justificativa
+                    "status_operacao": a.status_operacao
                 } for a in atrasadas
             ],
             "encerradas": [
                 {
                     "id": a.id, "chat_id": a.chat_id, "problema": a.problema, "previsao": a.previsao, 
                     "previsao_datetime": a.previsao_datetime, "respondido_em": a.respondido_em, "nome_lider": a.nome_lider, 
-                    "status_operacao": a.status_operacao, "horario_operando": a.horario_operando, "codigo": a.codigo, 
-                    "unidade": a.unidade, "frente": a.frente, "equipamento": a.equipamento, "codigo_equipamento": a.codigo_equipamento, 
-                    "tipo_operacao": a.tipo_operacao, "operacao": a.operacao, "nome_operador": a.nome_operador, 
-                    "data_operacao": a.data_operacao, "tempo_abertura": a.tempo_abertura, "tipo_arvore": a.tipo_arvore, 
-                    "justificativa": a.justificativa
+                    "status_operacao": a.status_operacao, "horario_operando": a.horario_operando
                 } for a in encerradas
             ]
         }
@@ -299,7 +271,7 @@ def debug_alertas():
                 {
                     "id": a.id,
                     "problema": a.problema[:50] + "..." if len(a.problema) > 50 else a.problema,
-                    "previsao": a.previsao,  # Valor da chave previsão
+                    "previsao": a.previsao,
                     "previsao_datetime": a.previsao_datetime.isoformat() if a.previsao_datetime else None,
                     "respondido_em": a.respondido_em.isoformat() if a.respondido_em else None,
                     "status_operacao": a.status_operacao,
@@ -311,7 +283,7 @@ def debug_alertas():
         logger.error(f"Erro no debug de alertas: {str(e)}")
         return {"error": str(e)}
     finally:
-        db.close() 
+        db.close()
 
 @router.delete('/alertas/all')
 def apagar_todos_alertas():
