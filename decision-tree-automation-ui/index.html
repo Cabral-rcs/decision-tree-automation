@@ -95,11 +95,6 @@
 </head>
 <body>
     <h1>Gestão de Alertas</h1>
-    <div style="margin-bottom: 1em; padding: 0.5em; background: #e8f5e8; border-radius: 4px; font-size: 0.9em;">
-        <span id="status-conexao">🟢 Sistema conectado</span> | 
-        <span id="ultima-verificacao">Última verificação: Agora</span> | 
-        <span id="proxima-verificacao">Próxima verificação: Em 3s</span>
-    </div>
     <div class="tabs">
         <button class="tab-btn active" onclick="abrirAba('alertas')">Alertas</button>
         <button class="tab-btn" onclick="abrirAba('auto-alert')">Alertas Automáticos</button>
@@ -110,14 +105,8 @@
             <button class="btn btn-danger" onclick="apagarTodosAlertas()" style="margin-right: 0.5em;">
                 🗑️ Apagar Todos os Alertas
             </button>
-            <button class="btn btn-info" onclick="forcarAtualizacao()" style="margin-right: 0.5em;">
-                🔄 Forçar Atualização
-            </button>
-            <button class="btn btn-secondary" onclick="debugAlertas()" style="margin-right: 0.5em;">
-                🔍 Debug Alertas
-            </button>
             <span style="font-size: 0.9em; color: #666;">
-                Use "Forçar Atualização" se as respostas do Telegram não aparecerem automaticamente.
+                Esta ação irá remover permanentemente todos os alertas do sistema.
             </span>
         </div>
         
@@ -259,38 +248,11 @@
             const label = currentStatus === 'operando' ? 'Não operando' : 'Operando';
             return `<button class="btn" onclick="atualizarStatus(${a.id}, '${next}')">${label}</button>`;
         }
-        // Função para atualizar indicador de status
-        function atualizarIndicadorStatus(status = 'conectado', ultimaVerificacao = null) {
-            const statusElement = document.getElementById('status-conexao');
-            const ultimaElement = document.getElementById('ultima-verificacao');
-            const proximaElement = document.getElementById('proxima-verificacao');
-            
-            if (status === 'conectado') {
-                statusElement.innerHTML = '🟢 Sistema conectado';
-                statusElement.style.color = '#28a745';
-            } else if (status === 'erro') {
-                statusElement.innerHTML = '🔴 Erro de conexão';
-                statusElement.style.color = '#dc3545';
-            } else {
-                statusElement.innerHTML = '🟡 Verificando...';
-                statusElement.style.color = '#ffc107';
-            }
-            
-            if (ultimaVerificacao) {
-                ultimaElement.textContent = `Última verificação: ${ultimaVerificacao}`;
-            }
-            
-            // Calcula próxima verificação
-            const agora = new Date();
-            const proxima = new Date(agora.getTime() + 3000); // 3 segundos
-            proximaElement.textContent = `Próxima verificação: ${proxima.toLocaleTimeString()}`;
-        }
+
 
         // Função para verificar se há atualizações
         async function verificarAtualizacoes() {
             try {
-                atualizarIndicadorStatus('verificando');
-                
                 const response = await fetch('/alertas/ultima-atualizacao', {
                     headers: {
                         'Cache-Control': 'no-cache, no-store, must-revalidate',
@@ -300,16 +262,12 @@
                 });
                 const data = await response.json();
                 
-                const agora = new Date().toLocaleTimeString();
-                atualizarIndicadorStatus('conectado', agora);
-                
                 if (data.tem_atualizacao && data.ultima_atualizacao !== ultimaAtualizacao) {
                     console.log('🔄 Atualização detectada! Recarregando dados...');
-                    console.log('📊 Detalhes da atualização:', data);
                     ultimaAtualizacao = data.ultima_atualizacao;
                     await carregarAlertas();
                     
-                    // Mostra notificação mais detalhada
+                    // Mostra notificação
                     const mensagem = data.campo_atualizado === 'respondido_em' 
                         ? 'Nova previsão registrada via Telegram!' 
                         : 'Alerta atualizado no sistema!';
@@ -317,8 +275,6 @@
                 }
             } catch (error) {
                 console.error('Erro ao verificar atualizações:', error);
-                atualizarIndicadorStatus('erro');
-                mostrarNotificacao('Erro na verificação automática', 'error');
             }
         }
 
@@ -379,32 +335,7 @@
             }
         }
 
-        // Função para forçar atualização imediata
-        async function forcarAtualizacao() {
-            console.log('🔄 Forçando atualização imediata...');
-            ultimaAtualizacao = null; // Reseta o timestamp para forçar atualização
-            await carregarAlertas();
-            mostrarNotificacao('Atualização forçada realizada', 'info');
-        }
 
-        // Função para debug dos alertas
-        async function debugAlertas() {
-            try {
-                const response = await fetch('/alertas/debug', {
-                    headers: {
-                        'Cache-Control': 'no-cache, no-store, must-revalidate',
-                        'Pragma': 'no-cache',
-                        'Expires': '0'
-                    }
-                });
-                const data = await response.json();
-                console.log('🔍 Debug dos alertas:', data);
-                return data;
-            } catch (error) {
-                console.error('Erro ao fazer debug dos alertas:', error);
-                return null;
-            }
-        }
 
         // Função para apagar todos os alertas
         async function apagarTodosAlertas() {
@@ -664,9 +595,6 @@
 
         carregarAlertas();
         carregarStatusAutoAlert();
-        
-        // Inicializa indicador de status
-        atualizarIndicadorStatus('conectado', new Date().toLocaleTimeString());
         
         // Inicia verificação automática de atualizações
         iniciarVerificacaoAutomatica();
