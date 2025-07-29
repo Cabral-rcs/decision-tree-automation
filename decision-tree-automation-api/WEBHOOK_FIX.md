@@ -47,6 +47,12 @@
 - ✅ Correção de dados mockados para tempo real
 - ✅ `test_respondido_em.py` - Script de teste específico para o campo
 
+### 9. **Correção da Categorização de Alertas** ⭐ **CRÍTICO**
+- ✅ Previsões no passado são automaticamente ajustadas para o próximo dia
+- ✅ Correção de alertas indo para "Atrasadas" em vez de "Escaladas"
+- ✅ `debug_categorizacao.py` - Script de debug para análise
+- ✅ `test_categorizacao.py` - Script de teste para validação
+
 ## Problemas Corrigidos
 
 ### ❌ **Erro de Timestamp**
@@ -73,6 +79,13 @@ ERROR: cannot access local variable 'datetime' where it is not associated with a
 respondido_em = datetime.utcnow()  # Tempo atual (incorreto)
 ```
 **✅ Solução**: Uso do tempo real de criação do alerta (`alerta.criado_em`)
+
+### ❌ **Categorização Incorreta de Alertas** ⭐ **CRÍTICO**
+```
+Alerta indo para "Atrasadas" em vez de "Escaladas"
+Previsão no passado causando categorização errada
+```
+**✅ Solução**: Ajuste automático de previsões no passado para o próximo dia
 
 ## Como Testar
 
@@ -124,7 +137,19 @@ cd decision-tree-automation-api
 python test_respondido_em.py
 ```
 
-### 8. **Teste Manual**
+### 8. **Debug da Categorização** ⭐ **CRÍTICO**
+```bash
+cd decision-tree-automation-api
+python debug_categorizacao.py
+```
+
+### 9. **Teste da Categorização** ⭐ **CRÍTICO**
+```bash
+cd decision-tree-automation-api
+python test_categorizacao.py
+```
+
+### 10. **Teste Manual**
 1. Envie uma mensagem para o bot no Telegram
 2. Verifique os logs do servidor
 3. Confirme se o alerta foi atualizado
@@ -216,6 +241,13 @@ INFO: Alerta 1 adicionado aos escalados (com previsão: 12:57)
 ```
 **✅ Solução**: Uso do tempo real de criação do alerta (`alerta.criado_em`)
 
+#### 9. **Categorização incorreta** ⭐ **CORRIGIDO**
+```
+❌ Alertas indo para "Atrasadas" em vez de "Escaladas"
+❌ Previsões no passado causando categorização errada
+```
+**✅ Solução**: Ajuste automático de previsões no passado para o próximo dia
+
 ## Status de Sucesso
 
 - ✅ Webhook configurado corretamente
@@ -229,15 +261,18 @@ INFO: Alerta 1 adicionado aos escalados (com previsão: 12:57)
 - ✅ **Listagem funcionando** ⭐
 - ✅ **Escopo de variável corrigido** ⭐ **FINAL**
 - ✅ **Campo respondido_em corrigido** ⭐ **NOVO**
+- ✅ **Categorização de alertas corrigida** ⭐ **CRÍTICO**
 
 ## Próximos Passos
 
-1. Execute o teste do respondido_em: `python test_respondido_em.py`
-2. Execute o teste rápido: `python test_webhook_quick.py`
-3. Execute o script de teste completo: `python test_webhook.py`
-4. Execute o teste de timezone: `python test_timezone_fix.py`
-5. Force a reconfiguração: `/telegram-force-setup`
-6. Envie uma mensagem de teste no Telegram
-7. Verifique se o alerta foi atualizado corretamente
-8. Confirme que aparece na categoria "Escaladas"
-9. Monitore os logs para confirmar funcionamento
+1. Execute o debug da categorização: `python debug_categorizacao.py`
+2. Execute o teste da categorização: `python test_categorizacao.py`
+3. Execute o teste do respondido_em: `python test_respondido_em.py`
+4. Execute o teste rápido: `python test_webhook_quick.py`
+5. Execute o script de teste completo: `python test_webhook.py`
+6. Execute o teste de timezone: `python test_timezone_fix.py`
+7. Force a reconfiguração: `/telegram-force-setup`
+8. Envie uma mensagem de teste no Telegram (use horário futuro: '18:00')
+9. Verifique se o alerta foi atualizado corretamente
+10. Confirme que aparece na categoria "Escaladas"
+11. Monitore os logs para confirmar funcionamento

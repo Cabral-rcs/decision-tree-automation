@@ -179,8 +179,19 @@ async def telegram_webhook(request: Request):
                 now_br = datetime.now(tz_br)
                 previsao_dt = now_br.replace(hour=int(hora), minute=int(minuto), second=0, microsecond=0)
             
-            logger.info(f'Previsão processada: {resposta} -> {previsao_dt}')
-            print(f'⏰ Previsão processada: {resposta} -> {previsao_dt}')
+            # Verifica se a previsão está no passado e ajusta para o próximo dia se necessário
+            tz_br = pytz.timezone('America/Sao_Paulo')
+            now_br = datetime.now(tz_br)
+            
+            if previsao_dt <= now_br:
+                # Se a previsão está no passado, move para o próximo dia
+                from datetime import timedelta
+                previsao_dt = previsao_dt + timedelta(days=1)
+                logger.info(f'Previsão ajustada para o próximo dia: {resposta} -> {previsao_dt}')
+                print(f'⏰ Previsão ajustada para o próximo dia: {resposta} -> {previsao_dt}')
+            else:
+                logger.info(f'Previsão processada: {resposta} -> {previsao_dt}')
+                print(f'⏰ Previsão processada: {resposta} -> {previsao_dt}')
             
             # Atualiza o alerta específico com a previsão
             logger.info(f'Atualizando alerta {alerta.id} com previsão: {resposta}')
