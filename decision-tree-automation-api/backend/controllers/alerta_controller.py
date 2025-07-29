@@ -204,24 +204,73 @@ def listar_alertas():
     finally:
         db.close()
 
+@router.post("/alertas/forcar-atualizacao")
+def forcar_atualizacao():
+    """Força uma atualização dos alertas"""
+    db = SessionLocal()
+    try:
+        # Simplesmente retorna o status atual para forçar o frontend a recarregar
+        total_alertas = db.query(Alerta).count()
+        alertas_com_previsao = db.query(Alerta).filter(Alerta.previsao.isnot(None)).count()
+        
+        logger.info(f"Forçando atualização - Total: {total_alertas}, Com previsão: {alertas_com_previsao}")
+        
+        return {
+            "success": True,
+            "message": "Atualização forçada",
+            "total_alertas": total_alertas,
+            "alertas_com_previsao": alertas_com_previsao,
+            "timestamp": datetime.now().isoformat()
+        }
+    except Exception as e:
+        logger.error(f"Erro ao forçar atualização: {str(e)}")
+        return {"error": str(e)}
+    finally:
+        db.close()
+
 @router.get("/alertas/ultima-atualizacao")
 def get_ultima_atualizacao():
     """Retorna a data da última atualização de alertas"""
     db = SessionLocal()
     try:
-        # Busca o alerta mais recentemente atualizado
-        ultimo_alerta = db.query(Alerta).order_by(Alerta.respondido_em.desc()).first()
+        # Busca o alerta mais recentemente atualizado considerando múltiplos campos
+        ultimo_alerta_respondido = db.query(Alerta).filter(
+            Alerta.respondido_em.isnot(None)
+        ).order_by(Alerta.respondido_em.desc()).first()
         
-        if ultimo_alerta and ultimo_alerta.respondido_em:
+        ultimo_alerta_criado = db.query(Alerta).order_by(Alerta.criado_em.desc()).first()
+        
+        ultimo_alerta_previsao = db.query(Alerta).filter(
+            Alerta.previsao_datetime.isnot(None)
+        ).order_by(Alerta.previsao_datetime.desc()).first()
+        
+        # Determina qual é o mais recente
+        timestamps = []
+        if ultimo_alerta_respondido and ultimo_alerta_respondido.respondido_em:
+            timestamps.append(('respondido_em', ultimo_alerta_respondido.respondido_em, ultimo_alerta_respondido.id))
+        
+        if ultimo_alerta_criado and ultimo_alerta_criado.criado_em:
+            timestamps.append(('criado_em', ultimo_alerta_criado.criado_em, ultimo_alerta_criado.id))
+            
+        if ultimo_alerta_previsao and ultimo_alerta_previsao.previsao_datetime:
+            timestamps.append(('previsao_datetime', ultimo_alerta_previsao.previsao_datetime, ultimo_alerta_previsao.id))
+        
+        if timestamps:
+            # Pega o timestamp mais recente
+            timestamps.sort(key=lambda x: x[1], reverse=True)
+            campo_mais_recente, timestamp_mais_recente, alerta_id = timestamps[0]
+            
             return {
-                "ultima_atualizacao": ultimo_alerta.respondido_em.isoformat(),
-                "alerta_id": ultimo_alerta.id,
+                "ultima_atualizacao": timestamp_mais_recente.isoformat(),
+                "alerta_id": alerta_id,
+                "campo_atualizado": campo_mais_recente,
                 "tem_atualizacao": True
             }
         else:
             return {
                 "ultima_atualizacao": None,
                 "alerta_id": None,
+                "campo_atualizado": None,
                 "tem_atualizacao": False
             }
     except Exception as e:

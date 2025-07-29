@@ -134,6 +134,8 @@ async def telegram_webhook(request: Request):
                 logger.info(f'✅ Alerta {alerta.id} atualizado com sucesso - Previsão: {alerta_atualizado.previsao}')
                 print(f'✅ Alerta {alerta.id} atualizado com sucesso - Previsão: {alerta_atualizado.previsao}')
                 print(f'✅ Alerta movido de "Pendentes" para "Escaladas"')
+                print(f'✅ Timestamp de resposta: {alerta_atualizado.respondido_em}')
+                print(f'✅ Previsão datetime: {alerta_atualizado.previsao_datetime}')
             else:
                 logger.error(f'❌ Falha ao atualizar alerta {alerta.id}')
                 print(f'❌ Falha ao atualizar alerta {alerta.id}')
