@@ -22,6 +22,7 @@ class Alerta(Base):
     criado_em = Column(DateTime(timezone=True), server_default=func.now())
     respondido_em = Column(DateTime(timezone=True), nullable=True)
     horario_operando = Column(DateTime(timezone=True), nullable=True)
+    origem_encerramento = Column(String, nullable=True)  # 'escalada' ou 'atrasada' - rastreia origem quando encerrado
     # Novos campos para alerta completo
     codigo = Column(String, nullable=True)
     unidade = Column(String, nullable=True)

@@ -541,8 +541,16 @@
 
         // Função para determinar a origem do alerta encerrado
         function getEncerradoBackground(a) {
-            // Se tem horario_operando, significa que foi resolvido (mudou de status)
-            // Se não tem horario_operando mas tem previsao_datetime, veio direto de escaladas
+            // Usa o novo campo origem_encerramento se disponível
+            if (a.origem_encerramento) {
+                if (a.origem_encerramento === 'atrasada') {
+                    return 'background-color: #ffe6e6;'; // Vermelho claro - veio de atrasadas
+                } else {
+                    return 'background-color: #e6ffe6;'; // Verde claro - veio de escaladas
+                }
+            }
+            
+            // Fallback para lógica antiga (compatibilidade)
             if (a.horario_operando) {
                 // Verifica se a previsão foi excedida (veio de atrasadas)
                 const previsao = new Date(a.previsao_datetime);
@@ -552,6 +560,28 @@
                 }
             }
             return 'background-color: #e6ffe6;'; // Verde claro - veio de escaladas
+        }
+
+        // Função para determinar a cor do texto baseada na origem
+        function getEncerradoTextColor(a) {
+            // Usa o novo campo origem_encerramento se disponível
+            if (a.origem_encerramento) {
+                if (a.origem_encerramento === 'atrasada') {
+                    return 'color: #dc3545; font-weight: bold;'; // Vermelho - veio de atrasadas
+                } else {
+                    return 'color: #28a745; font-weight: bold;'; // Verde - veio de escaladas
+                }
+            }
+            
+            // Fallback para lógica antiga (compatibilidade)
+            if (a.horario_operando) {
+                const previsao = new Date(a.previsao_datetime);
+                const horarioOperando = new Date(a.horario_operando);
+                if (horarioOperando > previsao) {
+                    return 'color: #dc3545; font-weight: bold;'; // Vermelho - veio de atrasadas
+                }
+            }
+            return 'color: #28a745; font-weight: bold;'; // Verde - veio de escaladas
         }
 
         function renderizarTabelaEncerradas(encerradas) {
@@ -571,7 +601,7 @@
                     <td>${a.operacao || '-'}</td>
                     <td>${a.nome_operador || '-'}</td>
                     <td>${a.problema || '-'}</td>
-                    <td><span style="color: #28a745; font-weight: bold;">${a.previsao || '-'}</span></td>
+                    <td><span style="${getEncerradoTextColor(a)}">${a.previsao || '-'}</span></td>
                     <td><span class="status-${a.status_operacao ? a.status_operacao.replace(' ', '-') : 'operando'}">${a.status_operacao || 'operando'}</span> ${statusButton(a)}</td>
                     <td>${a.respondido_em ? new Date(a.respondido_em).toLocaleString() : '-'}</td>
                     <td>${a.horario_operando ? new Date(a.horario_operando).toLocaleString() : '-'}</td>

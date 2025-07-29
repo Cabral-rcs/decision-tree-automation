@@ -90,14 +90,23 @@ def atualizar_status_operacao(alerta_id: int, body: dict):
         if not alerta:
             raise HTTPException(status_code=404, detail='Alerta não encontrado')
         
+        # Guarda o status anterior para rastrear origem
+        status_anterior = alerta.status_operacao
+        
         alerta.status_operacao = novo_status
-        # Se mudou para operando, salva o horário
+        # Se mudou para operando, salva o horário e rastreia origem
         if novo_status == 'operando':
             tz_br = pytz.timezone('America/Sao_Paulo')
             alerta.horario_operando = datetime.now(tz_br)
             # Se mudou para operando, vai para encerradas (tanto de escalada quanto de atrasada)
             if alerta.status in ['escalada', 'atrasada']:
+                # Rastreia a origem do encerramento ANTES de mudar o status
+                if alerta.status == 'atrasada':
+                    alerta.origem_encerramento = 'atrasada'
+                elif alerta.status == 'escalada':
+                    alerta.origem_encerramento = 'escalada'
                 alerta.status = 'encerrada'
+                logger.info(f"Alerta {alerta_id} encerrado - origem: {alerta.origem_encerramento}")
         
         db.commit()
         logger.info(f"Status do alerta {alerta_id} atualizado para {novo_status}")
@@ -195,7 +204,7 @@ def listar_alertas():
                 {
                     "id": a.id, "chat_id": a.chat_id, "problema": a.problema, "previsao": a.previsao, 
                     "previsao_datetime": a.previsao_datetime.isoformat() if a.previsao_datetime else None, "respondido_em": a.respondido_em.isoformat() if a.respondido_em else None, "nome_lider": a.nome_lider, 
-                    "status_operacao": a.status_operacao, "horario_operando": a.horario_operando.isoformat() if a.horario_operando else None, "codigo": a.codigo, "unidade": a.unidade, "frente": a.frente, "equipamento": a.equipamento, "codigo_equipamento": a.codigo_equipamento,
+                    "status_operacao": a.status_operacao, "horario_operando": a.horario_operando.isoformat() if a.horario_operando else None, "origem_encerramento": a.origem_encerramento, "codigo": a.codigo, "unidade": a.unidade, "frente": a.frente, "equipamento": a.equipamento, "codigo_equipamento": a.codigo_equipamento,
                     "tipo_operacao": a.tipo_operacao, "operacao": a.operacao, "nome_operador": a.nome_operador, "data_operacao": a.data_operacao.isoformat() if a.data_operacao else None, "tempo_abertura": a.tempo_abertura,
                     "tipo_arvore": a.tipo_arvore, "justificativa": a.justificativa
                 } for a in encerradas
