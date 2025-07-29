@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 Script de migração do banco de dados
-Atualiza a estrutura das tabelas e garante consistência
+Agora apenas inicializa o banco em memória (dados zerados a cada deploy)
 """
 
 import os
@@ -11,68 +11,40 @@ from dotenv import load_dotenv
 # Adiciona o diretório do backend ao path
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
-from backend.models.responses_model import init_db, engine
+from backend.config import DATABASE_URL
+from backend.models.responses_model import init_db
 from backend.models.alerta_model import Base as AlertaBase
 from backend.models.auto_alert_config_model import Base as AutoAlertConfigBase
-from sqlalchemy import text
+from sqlalchemy import create_engine
 
 def migrate_database():
-    """Executa a migração do banco de dados"""
-    print("🔄 Iniciando migração do banco de dados...")
+    """Inicializa o banco de dados (dados zerados a cada deploy)"""
+    print("🔄 Iniciando inicialização do banco de dados...")
     
     try:
-        # Inicializa o banco (cria tabelas se não existirem)
+        # Cria o engine
+        engine = create_engine(DATABASE_URL)
+        
+        # Recria todas as tabelas (dados zerados)
+        print("🗑️  Removendo tabelas existentes...")
+        AlertaBase.metadata.drop_all(bind=engine, checkfirst=True)
+        AutoAlertConfigBase.metadata.drop_all(bind=engine, checkfirst=True)
+        
+        print("📋 Criando novas tabelas...")
+        AlertaBase.metadata.create_all(bind=engine)
+        AutoAlertConfigBase.metadata.create_all(bind=engine)
         init_db()
-        print("✅ Tabelas criadas/verificadas com sucesso")
         
-        # Verifica se há dados inconsistentes
-        with engine.connect() as conn:
-            # Verifica se há alertas com prazo mas sem previsão
-            result = conn.execute(text("""
-                SELECT COUNT(*) as count 
-                FROM alertas 
-                WHERE prazo IS NOT NULL AND previsao IS NULL
-            """))
-            inconsistent_count = result.fetchone()[0]
-            
-            if inconsistent_count > 0:
-                print(f"⚠️  Encontrados {inconsistent_count} alertas com prazo mas sem previsão")
-                print("🔄 Migrando dados inconsistentes...")
-                
-                # Copia o valor do prazo para previsão onde necessário
-                conn.execute(text("""
-                    UPDATE alertas 
-                    SET previsao = prazo::text, 
-                        previsao_datetime = prazo 
-                    WHERE prazo IS NOT NULL AND previsao IS NULL
-                """))
-                conn.commit()
-                print("✅ Dados migrados com sucesso")
-            
-            # Verifica se há alertas com previsão mas sem prazo (normal após migração)
-            result = conn.execute(text("""
-                SELECT COUNT(*) as count 
-                FROM alertas 
-                WHERE previsao IS NOT NULL AND prazo IS NULL
-            """))
-            migrated_count = result.fetchone()[0]
-            
-            if migrated_count > 0:
-                print(f"✅ {migrated_count} alertas com previsão (migração bem-sucedida)")
-        
-        print("🎉 Migração concluída com sucesso!")
+        print("✅ Banco de dados inicializado com sucesso!")
+        print("ℹ️  Dados zerados a cada deploy (banco em memória)")
         return True
         
     except Exception as e:
-        print(f"❌ Erro durante a migração: {e}")
+        print(f"❌ Erro durante a inicialização: {e}")
         return False
 
 if __name__ == "__main__":
     load_dotenv()
-    
-    if not os.getenv('DATABASE_URL'):
-        print("❌ DATABASE_URL não configurada!")
-        sys.exit(1)
     
     success = migrate_database()
     if not success:

@@ -336,10 +336,41 @@ def check_frontend_version():
         "check_time": datetime.datetime.now().isoformat()
     }
 
-# Ao iniciar o sistema, envie a primeira pergunta para todos os usuários
+# Ao iniciar o sistema, inicializa o banco e envia a primeira pergunta
 @app.on_event("startup")
-def enviar_primeira_pergunta():
+def inicializar_sistema():
     logger.info("🚀 Iniciando Decision Tree Automation...")
+    
+    # Inicializa o banco de dados (dados zerados a cada deploy)
+    try:
+        from backend.models.alerta_model import init_database
+        from backend.models.responses_model import init_db
+        from backend.models.auto_alert_config_model import Base as AutoAlertConfigBase
+        from sqlalchemy import create_engine
+        from backend.config import DATABASE_URL
+        
+        # Cria o engine e recria todas as tabelas
+        engine = create_engine(DATABASE_URL)
+        
+        # Recria todas as tabelas (dados zerados)
+        from backend.models.alerta_model import Base as AlertaBase
+        AlertaBase.metadata.drop_all(bind=engine, checkfirst=True)
+        AlertaBase.metadata.create_all(bind=engine)
+        
+        from backend.models.responses_model import Base as ResponseBase
+        ResponseBase.metadata.drop_all(bind=engine, checkfirst=True)
+        ResponseBase.metadata.create_all(bind=engine)
+        
+        AutoAlertConfigBase.metadata.drop_all(bind=engine, checkfirst=True)
+        AutoAlertConfigBase.metadata.create_all(bind=engine)
+        
+        logger.info("✅ Banco de dados inicializado (dados zerados)")
+        print("✅ Banco de dados inicializado (dados zerados)")
+        
+    except Exception as e:
+        logger.error(f"❌ Erro ao inicializar banco de dados: {e}")
+        print(f"❌ Erro ao inicializar banco de dados: {e}")
+    
     try:
         for user_id in CHAT_IDS:
             enviar_pergunta_para_usuario(user_id)

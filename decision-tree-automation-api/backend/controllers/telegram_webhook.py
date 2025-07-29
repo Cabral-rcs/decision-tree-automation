@@ -56,33 +56,10 @@ async def telegram_webhook(request: Request):
         
         db = SessionLocal()
         try:
-            # Extrai o ID do alerta da mensagem anterior (se disponível)
-            alerta_id = None
-            
-            # Busca por padrão "ID do Alerta: X" na mensagem
-            import re
-            id_match = re.search(r'ID do Alerta: (\d+)', resposta)
-            if id_match:
-                alerta_id = int(id_match.group(1))
-                logger.info(f'ID do alerta extraído da mensagem: {alerta_id}')
-                print(f'🎯 ID do alerta extraído: {alerta_id}')
-            
-            # Se não encontrou ID na mensagem, busca o alerta mais antigo sem previsão
-            if alerta_id:
-                alerta = db.query(Alerta).filter(Alerta.id == alerta_id).first()
-                if not alerta:
-                    logger.warning(f'Alerta com ID {alerta_id} não encontrado')
-                    print(f'⚠️  Alerta com ID {alerta_id} não encontrado')
-                    alerta = None
-                elif alerta.previsao:
-                    logger.warning(f'Alerta {alerta_id} já possui previsão: {alerta.previsao}')
-                    print(f'⚠️  Alerta {alerta_id} já possui previsão: {alerta.previsao}')
-                    alerta = None
-            else:
-                # Busca o alerta mais antigo sem previsão (fallback)
-                alerta = db.query(Alerta).filter(
-                    Alerta.previsao.is_(None)
-                ).order_by(Alerta.criado_em.asc()).first()
+            # Busca o alerta mais antigo sem previsão (ordem cronológica para vínculo correto)
+            alerta = db.query(Alerta).filter(
+                Alerta.previsao.is_(None)
+            ).order_by(Alerta.criado_em.asc()).first()
             
             if not alerta:
                 logger.warning('Nenhum alerta pendente encontrado')
@@ -115,15 +92,12 @@ async def telegram_webhook(request: Request):
             
             print(f'📋 Total de alertas pendentes na fila: {total_pendentes}')
             
-            # Remove o ID do alerta da resposta antes de validar o formato
-            resposta_limpa = re.sub(r'ID do Alerta: \d+', '', resposta).strip()
-            
             # Validação do padrão HH:MM
             padrao = r'^(\d{2}):(\d{2})$'
-            match = re.match(padrao, resposta_limpa)
+            match = re.match(padrao, resposta)
             if not match:
-                logger.warning(f'Formato inválido de resposta: {resposta_limpa}')
-                print(f'❌ Formato inválido: {resposta_limpa}')
+                logger.warning(f'Formato inválido de resposta: {resposta}')
+                print(f'❌ Formato inválido: {resposta}')
                 
                 # Pede novamente com instruções claras
                 payload = {
