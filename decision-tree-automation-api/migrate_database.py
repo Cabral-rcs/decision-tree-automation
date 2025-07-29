@@ -1,109 +1,79 @@
 #!/usr/bin/env python3
 """
-Script para migrar a base de dados e adicionar as novas colunas ao modelo de alerta
+Script de migração do banco de dados
+Atualiza a estrutura das tabelas e garante consistência
 """
 
 import os
-from sqlalchemy import create_engine, text
+import sys
 from dotenv import load_dotenv
-from backend.models.alerta_model import Alerta, Base
-from backend.models.auto_alert_config_model import AutoAlertConfig
-from backend.models.responses_model import Resposta, EstadoUsuario
+
+# Adiciona o diretório do backend ao path
+sys.path.append(os.path.dirname(os.path.abspath(__file__)))
+
+from backend.models.responses_model import init_db, engine
+from backend.models.alerta_model import Base as AlertaBase
+from backend.models.auto_alert_config_model import Base as AutoAlertConfigBase
+from sqlalchemy import text
 
 def migrate_database():
-    """Migra a base de dados para incluir as novas colunas"""
-    
-    print("=== Migração da Base de Dados ===\n")
-    
-    # Carrega variáveis de ambiente
-    load_dotenv()
-    DATABASE_URL = os.getenv('DATABASE_URL')
-    
-    if not DATABASE_URL:
-        print("❌ DATABASE_URL não encontrada no arquivo .env")
-        return False
+    """Executa a migração do banco de dados"""
+    print("🔄 Iniciando migração do banco de dados...")
     
     try:
-        # Cria engine
-        engine = create_engine(DATABASE_URL)
+        # Inicializa o banco (cria tabelas se não existirem)
+        init_db()
+        print("✅ Tabelas criadas/verificadas com sucesso")
         
-        print("1. Verificando conexão com banco...")
+        # Verifica se há dados inconsistentes
         with engine.connect() as conn:
-            result = conn.execute(text("SELECT 1"))
-            print("   ✅ Conexão OK")
-        
-        print("2. Verificando tabelas existentes...")
-        with engine.connect() as conn:
+            # Verifica se há alertas com prazo mas sem previsão
             result = conn.execute(text("""
-                SELECT table_name 
-                FROM information_schema.tables 
-                WHERE table_schema = 'public'
+                SELECT COUNT(*) as count 
+                FROM alertas 
+                WHERE prazo IS NOT NULL AND previsao IS NULL
             """))
-            existing_tables = [row[0] for row in result]
-            print(f"   Tabelas encontradas: {existing_tables}")
-        
-        print("3. Verificando colunas da tabela alertas...")
-        with engine.connect() as conn:
-            result = conn.execute(text("""
-                SELECT column_name 
-                FROM information_schema.columns 
-                WHERE table_name = 'alertas'
-            """))
-            existing_columns = [row[0] for row in result]
-            print(f"   Colunas existentes: {existing_columns}")
-        
-        # Novas colunas a serem adicionadas
-        new_columns = [
-            'codigo', 'unidade', 'frente', 'equipamento', 'codigo_equipamento',
-            'tipo_operacao', 'operacao', 'nome_operador', 'data_operacao',
-            'tempo_abertura', 'tipo_arvore', 'justificativa', 'prazo'
-        ]
-        
-        print("4. Adicionando novas colunas...")
-        with engine.connect() as conn:
-            for column in new_columns:
-                if column not in existing_columns:
-                    try:
-                        if column in ['data_operacao', 'prazo']:
-                            # Colunas de data/hora
-                            conn.execute(text(f"ALTER TABLE alertas ADD COLUMN {column} TIMESTAMP WITH TIME ZONE"))
-                        elif column in ['justificativa']:
-                            # Coluna de texto longo
-                            conn.execute(text(f"ALTER TABLE alertas ADD COLUMN {column} TEXT"))
-                        else:
-                            # Colunas de string
-                            conn.execute(text(f"ALTER TABLE alertas ADD COLUMN {column} VARCHAR"))
-                        print(f"   ✅ Coluna {column} adicionada")
-                    except Exception as e:
-                        print(f"   ⚠️  Coluna {column} já existe ou erro: {e}")
+            inconsistent_count = result.fetchone()[0]
             
-            conn.commit()
+            if inconsistent_count > 0:
+                print(f"⚠️  Encontrados {inconsistent_count} alertas com prazo mas sem previsão")
+                print("🔄 Migrando dados inconsistentes...")
+                
+                # Copia o valor do prazo para previsão onde necessário
+                conn.execute(text("""
+                    UPDATE alertas 
+                    SET previsao = prazo::text, 
+                        previsao_datetime = prazo 
+                    WHERE prazo IS NOT NULL AND previsao IS NULL
+                """))
+                conn.commit()
+                print("✅ Dados migrados com sucesso")
+            
+            # Verifica se há alertas com previsão mas sem prazo (normal após migração)
+            result = conn.execute(text("""
+                SELECT COUNT(*) as count 
+                FROM alertas 
+                WHERE previsao IS NOT NULL AND prazo IS NULL
+            """))
+            migrated_count = result.fetchone()[0]
+            
+            if migrated_count > 0:
+                print(f"✅ {migrated_count} alertas com previsão (migração bem-sucedida)")
         
-        print("5. Verificando tabela auto_alert_config...")
-        if 'auto_alert_config' not in existing_tables:
-            print("   Criando tabela auto_alert_config...")
-            Base.metadata.create_all(bind=engine, tables=[AutoAlertConfig.__table__])
-            print("   ✅ Tabela auto_alert_config criada")
-        else:
-            print("   ✅ Tabela auto_alert_config já existe")
-        
-        print("6. Verificando tabela lideres...")
-        print("   ✅ Tabela lideres não é mais necessária (líder fixo: Rafael Cabral)")
-        
-        print("7. Verificando tabelas de respostas...")
-        if 'respostas' not in existing_tables:
-            print("   Criando tabelas de respostas...")
-            Base.metadata.create_all(bind=engine, tables=[Resposta.__table__, EstadoUsuario.__table__])
-            print("   ✅ Tabelas de respostas criadas")
-        else:
-            print("   ✅ Tabelas de respostas já existem")
-        
-        print("\n=== Migração Concluída com Sucesso! ===")
+        print("🎉 Migração concluída com sucesso!")
         return True
         
     except Exception as e:
-        print(f"\n❌ Erro na migração: {e}")
+        print(f"❌ Erro durante a migração: {e}")
         return False
 
 if __name__ == "__main__":
-    migrate_database() 
+    load_dotenv()
+    
+    if not os.getenv('DATABASE_URL'):
+        print("❌ DATABASE_URL não configurada!")
+        sys.exit(1)
+    
+    success = migrate_database()
+    if not success:
+        sys.exit(1) 

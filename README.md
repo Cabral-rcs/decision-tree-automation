@@ -465,6 +465,50 @@ Os alertas automáticos incluem:
 
 ---
 
+## Regras de Negócio Atualizadas
+
+### Categorização de Alertas
+
+O sistema categoriza alertas em 4 grupos baseados na **previsão** fornecida pelo líder:
+
+#### **1. Pendentes (Aguardando Previsão)**
+- **Condição**: Sem previsão respondida pelo líder
+- **Campo**: `previsao_datetime` é NULL
+- **Ação**: Aguarda resposta do líder via Telegram
+
+#### **2. Escaladas**
+- **Condição**: Com previsão, dentro da previsão, status "não operando"
+- **Campo**: `previsao_datetime >= now` AND `status_operacao = 'não operando'`
+- **Ação**: Monitoramento até a previsão
+
+#### **3. Atrasadas**
+- **Condição**: Previsão excedida, status "não operando"
+- **Campo**: `previsao_datetime < now` AND `status_operacao = 'não operando'`
+- **Ação**: Requer atenção imediata
+
+#### **4. Encerradas**
+- **Condição**: Previsão não excedida, status "operando"
+- **Campo**: `previsao_datetime >= now` AND `status_operacao = 'operando'`
+- **Ação**: Problema resolvido
+
+### Vínculo Alerta-Previsão
+
+- **Ordem Cronológica**: O webhook associa a previsão ao alerta mais antigo sem previsão
+- **Campo Principal**: `previsao_datetime` (datetime com timezone)
+- **Campo Auxiliar**: `previsao` (string HH:MM)
+- **Campo Removido**: `prazo` (não mais utilizado)
+
+### Fluxo de Processamento
+
+1. **Criação**: Alerta criado com `previsao_datetime = NULL`
+2. **Envio**: Mensagem enviada ao líder via Telegram
+3. **Resposta**: Líder responde com formato HH:MM
+4. **Processamento**: Webhook atualiza `previsao` e `previsao_datetime`
+5. **Categorização**: Alerta move de "Pendentes" para "Escaladas"
+6. **Monitoramento**: Sistema verifica se previsão foi excedida
+
+---
+
 
 
 ## Fluxograma Completo do Sistema

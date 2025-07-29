@@ -44,9 +44,9 @@ def criar_alerta(alerta: dict):
             tempo_abertura=alerta.get('tempo_abertura'),
             tipo_arvore=alerta.get('tipo_arvore'),
             justificativa=None,  # Campo não preenchido automaticamente
-            prazo=None  # Campo preenchido pelo líder via Telegram
+            prazo=None  # Campo não preenchido automaticamente
         )
-        logger.info(f"Criando alerta: problema={alerta['problema']}, status_operacao=não operando, prazo=None")
+        logger.info(f"Criando alerta: problema={alerta['problema']}, status_operacao=não operando")
         db.add(novo_alerta)
         db.commit()
         db.refresh(novo_alerta)
@@ -126,32 +126,32 @@ def listar_alertas():
         logger.info(f"Listando alertas - horário atual: {now}")
         
         for alerta in db.query(Alerta).order_by(Alerta.criado_em.desc()).all():
-            logger.info(f"Processando alerta ID {alerta.id}: prazo={alerta.prazo}, status_operacao={alerta.status_operacao}")
+            logger.info(f"Processando alerta ID {alerta.id}: previsao_datetime={alerta.previsao_datetime}, status_operacao={alerta.status_operacao}")
             
-            # Aguardando Previsão: Sem prazo respondido pelo líder
-            if not alerta.prazo:
+            # Aguardando Previsão: Sem previsão respondida pelo líder
+            if not alerta.previsao_datetime:
                 pendentes.append(alerta)
                 logger.info(f"Alerta {alerta.id} adicionado aos pendentes")
                 continue
             
-            # Se tem prazo, verifica as outras categorias
+            # Se tem previsão, verifica as outras categorias
             if alerta.status_operacao == 'operando':
-                # Encerradas: Prazo não excedido e status operando
-                if alerta.prazo >= now:
+                # Encerradas: Previsão não excedida e status operando
+                if alerta.previsao_datetime >= now:
                     encerradas.append(alerta)
                     logger.info(f"Alerta {alerta.id} adicionado aos encerrados")
                 else:
-                    # Atrasadas: Prazo excedido mas status operando (caso raro)
+                    # Atrasadas: Previsão excedida mas status operando (caso raro)
                     atrasadas.append(alerta)
-                    logger.info(f"Alerta {alerta.id} adicionado aos atrasados (operando mas prazo excedido)")
+                    logger.info(f"Alerta {alerta.id} adicionado aos atrasados (operando mas previsão excedida)")
             else:
                 # Status não operando
-                if alerta.prazo >= now:
-                    # Escaladas: Prazo respondido, atual dentro do prazo e status não operando
+                if alerta.previsao_datetime >= now:
+                    # Escaladas: Previsão respondida, atual dentro da previsão e status não operando
                     escaladas.append(alerta)
                     logger.info(f"Alerta {alerta.id} adicionado aos escalados")
                 else:
-                    # Atrasadas: Prazo excedido e status não operando
+                    # Atrasadas: Previsão excedida e status não operando
                     atrasadas.append(alerta)
                     logger.info(f"Alerta {alerta.id} adicionado aos atrasados")
         
@@ -163,7 +163,7 @@ def listar_alertas():
                     "equipamento": a.equipamento, "codigo_equipamento": a.codigo_equipamento, "tipo_operacao": a.tipo_operacao,
                     "operacao": a.operacao, "nome_operador": a.nome_operador, "data_operacao": a.data_operacao,
                     "tempo_abertura": a.tempo_abertura, "tipo_arvore": a.tipo_arvore, "justificativa": a.justificativa,
-                    "prazo": a.prazo, "status_operacao": a.status_operacao
+                    "status_operacao": a.status_operacao
                 } for a in pendentes
             ],
             "escaladas": [
@@ -173,8 +173,7 @@ def listar_alertas():
                     "status_operacao": a.status_operacao, "codigo": a.codigo, "unidade": a.unidade, "frente": a.frente,
                     "equipamento": a.equipamento, "codigo_equipamento": a.codigo_equipamento, "tipo_operacao": a.tipo_operacao,
                     "operacao": a.operacao, "nome_operador": a.nome_operador, "data_operacao": a.data_operacao,
-                    "tempo_abertura": a.tempo_abertura, "tipo_arvore": a.tipo_arvore, "justificativa": a.justificativa,
-                    "prazo": a.prazo
+                    "tempo_abertura": a.tempo_abertura, "tipo_arvore": a.tipo_arvore, "justificativa": a.justificativa
                 } for a in escaladas
             ],
             "atrasadas": [
@@ -184,8 +183,7 @@ def listar_alertas():
                     "status_operacao": a.status_operacao, "codigo": a.codigo, "unidade": a.unidade, "frente": a.frente,
                     "equipamento": a.equipamento, "codigo_equipamento": a.codigo_equipamento, "tipo_operacao": a.tipo_operacao,
                     "operacao": a.operacao, "nome_operador": a.nome_operador, "data_operacao": a.data_operacao,
-                    "tempo_abertura": a.tempo_abertura, "tipo_arvore": a.tipo_arvore, "justificativa": a.justificativa,
-                    "prazo": a.prazo
+                    "tempo_abertura": a.tempo_abertura, "tipo_arvore": a.tipo_arvore, "justificativa": a.justificativa
                 } for a in atrasadas
             ],
             "encerradas": [
@@ -196,7 +194,7 @@ def listar_alertas():
                     "unidade": a.unidade, "frente": a.frente, "equipamento": a.equipamento, "codigo_equipamento": a.codigo_equipamento, 
                     "tipo_operacao": a.tipo_operacao, "operacao": a.operacao, "nome_operador": a.nome_operador, 
                     "data_operacao": a.data_operacao, "tempo_abertura": a.tempo_abertura, "tipo_arvore": a.tipo_arvore, 
-                    "justificativa": a.justificativa, "prazo": a.prazo
+                    "justificativa": a.justificativa
                 } for a in encerradas
             ]
         }
@@ -204,7 +202,7 @@ def listar_alertas():
         logger.error(f"Erro ao listar alertas: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Erro interno: {str(e)}")
     finally:
-        db.close() 
+        db.close()
 
 @router.get("/alertas/ultima-atualizacao")
 def get_ultima_atualizacao():
@@ -238,8 +236,8 @@ def debug_alertas():
     db = SessionLocal()
     try:
         total_alertas = db.query(Alerta).count()
-        pendentes = db.query(Alerta).filter(Alerta.prazo.is_(None)).count()
-        com_prazo = db.query(Alerta).filter(Alerta.prazo.isnot(None)).count()
+        pendentes = db.query(Alerta).filter(Alerta.previsao_datetime.is_(None)).count()
+        com_previsao = db.query(Alerta).filter(Alerta.previsao_datetime.isnot(None)).count()
         
         # Últimos 5 alertas
         ultimos_alertas = db.query(Alerta).order_by(Alerta.criado_em.desc()).limit(5).all()
@@ -247,12 +245,12 @@ def debug_alertas():
         return {
             "total_alertas": total_alertas,
             "pendentes": pendentes,
-            "com_prazo": com_prazo,
+            "com_previsao": com_previsao,
             "ultimos_alertas": [
                 {
                     "id": a.id,
                     "problema": a.problema[:50] + "..." if len(a.problema) > 50 else a.problema,
-                    "prazo": a.prazo.isoformat() if a.prazo else None,
+                    "previsao_datetime": a.previsao_datetime.isoformat() if a.previsao_datetime else None,
                     "respondido_em": a.respondido_em.isoformat() if a.respondido_em else None,
                     "status_operacao": a.status_operacao,
                     "criado_em": a.criado_em.isoformat() if a.criado_em else None

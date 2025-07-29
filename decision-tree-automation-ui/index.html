@@ -107,7 +107,7 @@
                     <tr>
                         <th>ID</th><th>Código</th><th>Unidade</th><th>Frente</th><th>Equipamento</th>
                         <th>Tipo Operação</th><th>Operação</th><th>Operador</th><th>Data Operação</th>
-                        <th>Tempo Abertura</th><th>Tipo Árvore</th><th>Justificativa</th><th>Prazo</th>
+                        <th>Tempo Abertura</th><th>Tipo Árvore</th><th>Justificativa</th>
                         <th>Líder</th><th>Problema</th><th>Status</th><th>Criado em</th>
                     </tr>
                 </thead>
@@ -121,7 +121,7 @@
                     <tr>
                         <th>ID</th><th>Código</th><th>Unidade</th><th>Frente</th><th>Equipamento</th>
                         <th>Tipo Operação</th><th>Operação</th><th>Operador</th><th>Data Operação</th>
-                        <th>Tempo Abertura</th><th>Tipo Árvore</th><th>Justificativa</th><th>Prazo</th>
+                        <th>Tempo Abertura</th><th>Tipo Árvore</th><th>Justificativa</th>
                         <th>Líder</th><th>Problema</th><th>Previsão</th><th>Status</th><th>Resposta do líder</th>
                     </tr>
                 </thead>
@@ -135,7 +135,7 @@
                     <tr>
                         <th>ID</th><th>Código</th><th>Unidade</th><th>Frente</th><th>Equipamento</th>
                         <th>Tipo Operação</th><th>Operação</th><th>Operador</th><th>Data Operação</th>
-                        <th>Tempo Abertura</th><th>Tipo Árvore</th><th>Justificativa</th><th>Prazo</th>
+                        <th>Tempo Abertura</th><th>Tipo Árvore</th><th>Justificativa</th>
                         <th>Líder</th><th>Problema</th><th>Previsão</th><th>Status</th><th>Respondido em</th>
                     </tr>
                 </thead>
@@ -149,7 +149,7 @@
                     <tr>
                         <th>ID</th><th>Código</th><th>Unidade</th><th>Frente</th><th>Equipamento</th>
                         <th>Tipo Operação</th><th>Operação</th><th>Operador</th><th>Data Operação</th>
-                        <th>Tempo Abertura</th><th>Tipo Árvore</th><th>Justificativa</th><th>Prazo</th>
+                        <th>Tempo Abertura</th><th>Tipo Árvore</th><th>Justificativa</th>
                         <th>Líder</th><th>Problema</th><th>Previsão</th><th>Status</th><th>Respondido em</th><th>Voltou a operar</th>
                     </tr>
                 </thead>
@@ -239,7 +239,7 @@
                     await carregarAlertas();
                     
                     // Mostra notificação
-                    mostrarNotificacao('Novo prazo registrado via Telegram!', 'success');
+                    mostrarNotificacao('Nova previsão registrada via Telegram!', 'success');
                 }
             } catch (error) {
                 console.error('Erro ao verificar atualizações:', error);
@@ -299,7 +299,7 @@
                     await carregarAlertas();
                     
                     // Mostra notificação
-                    mostrarNotificacao('Novo prazo registrado via Telegram!', 'success');
+                    mostrarNotificacao('Nova previsão registrada via Telegram!', 'success');
                 }
             } catch (error) {
                 console.error('Erro ao verificar atualizações:', error);
@@ -508,7 +508,6 @@
                     <td>${a.tempo_abertura || '-'}</td>
                     <td>${a.tipo_arvore || '-'}</td>
                     <td>${a.justificativa || '-'}</td>
-                    <td>${a.prazo ? new Date(a.prazo).toLocaleString() : '-'}</td>
                     <td>${a.nome_lider || '-'}</td>
                     <td>${a.problema || '-'}</td>
                     <td><span class="status-${a.status_operacao ? a.status_operacao.replace(' ', '-') : 'nao-operando'}">${a.status_operacao || 'não operando'}</span></td>
@@ -538,7 +537,6 @@
                     <td>${a.tempo_abertura || '-'}</td>
                     <td>${a.tipo_arvore || '-'}</td>
                     <td>${a.justificativa || '-'}</td>
-                    <td>${a.prazo ? new Date(a.prazo).toLocaleString() : '-'}</td>
                     <td>${a.nome_lider || '-'}</td>
                     <td>${a.problema || '-'}</td>
                     <td>${a.previsao || '-'}</td>
@@ -568,7 +566,6 @@
                     <td>${a.tempo_abertura || '-'}</td>
                     <td>${a.tipo_arvore || '-'}</td>
                     <td>${a.justificativa || '-'}</td>
-                    <td>${a.prazo ? new Date(a.prazo).toLocaleString() : '-'}</td>
                     <td>${a.nome_lider || '-'}</td>
                     <td>${a.problema || '-'}</td>
                     <td>${a.previsao || '-'}</td>
@@ -598,7 +595,6 @@
                     <td>${a.tempo_abertura || '-'}</td>
                     <td>${a.tipo_arvore || '-'}</td>
                     <td>${a.justificativa || '-'}</td>
-                    <td>${a.prazo ? new Date(a.prazo).toLocaleString() : '-'}</td>
                     <td>${a.nome_lider || '-'}</td>
                     <td>${a.problema || '-'}</td>
                     <td>${a.previsao || '-'}</td>

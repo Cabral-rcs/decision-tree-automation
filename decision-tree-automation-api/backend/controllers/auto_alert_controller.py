@@ -121,7 +121,7 @@ def create_alert_now():
             tempo_abertura=alert_data.get('tempo_abertura'),
             tipo_arvore=alert_data.get('tipo_arvore'),
             justificativa=None,  # Campo não preenchido automaticamente
-            prazo=None  # Campo preenchido pelo líder via Telegram
+            prazo=None  # Campo não preenchido automaticamente
         )
         db.add(novo_alerta)
         db.commit()
