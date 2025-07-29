@@ -103,7 +103,6 @@ class MockDataGenerator:
             "tempo_abertura": tempo_abertura_str,
             "tipo_arvore": "Árvore de Manutenção",
             "justificativa": None,  # Campo não preenchido automaticamente
-            "prazo": None,  # Campo preenchido pelo líder via Telegram
             "nome_lider": "Rafael Cabral",
             "chat_id": "6435800936",
             "problema": f"[AUTO] {equipamento['nome']} - {operacao} - {problema}"  # Adicionado campo problema

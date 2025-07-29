@@ -35,7 +35,6 @@ class Alerta(Base):
     tempo_abertura = Column(String, nullable=True)
     tipo_arvore = Column(String, nullable=True)
     justificativa = Column(Text, nullable=True)
-    prazo = Column(String, nullable=True)
 
 # Função para inicializar o banco de dados (recriado a cada deploy)
 def init_database():

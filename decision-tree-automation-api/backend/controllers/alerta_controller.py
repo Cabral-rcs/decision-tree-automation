@@ -42,8 +42,7 @@ def criar_alerta(alerta: dict):
             data_operacao=alerta.get('data_operacao'),
             tempo_abertura=alerta.get('tempo_abertura'),
             tipo_arvore=alerta.get('tipo_arvore'),
-            justificativa=alerta.get('justificativa'),
-            prazo=alerta.get('prazo')
+            justificativa=alerta.get('justificativa')
         )
         logger.info(f"Criando alerta: problema={alerta['problema']}, status_operacao=não operando")
         db.add(novo_alerta)
@@ -161,7 +160,7 @@ def listar_alertas():
                     "nome_lider": a.nome_lider, "status_operacao": a.status_operacao, "previsao": None,
                     "codigo": a.codigo, "unidade": a.unidade, "frente": a.frente, "equipamento": a.equipamento, "codigo_equipamento": a.codigo_equipamento,
                     "tipo_operacao": a.tipo_operacao, "operacao": a.operacao, "nome_operador": a.nome_operador, "data_operacao": a.data_operacao, "tempo_abertura": a.tempo_abertura,
-                    "tipo_arvore": a.tipo_arvore, "justificativa": a.justificativa, "prazo": a.prazo
+                    "tipo_arvore": a.tipo_arvore, "justificativa": a.justificativa
                 } for a in pendentes
             ],
             "escaladas": [
@@ -170,7 +169,7 @@ def listar_alertas():
                     "previsao_datetime": a.previsao_datetime, "respondido_em": a.respondido_em, "nome_lider": a.nome_lider, 
                     "status_operacao": a.status_operacao, "codigo": a.codigo, "unidade": a.unidade, "frente": a.frente, "equipamento": a.equipamento, "codigo_equipamento": a.codigo_equipamento,
                     "tipo_operacao": a.tipo_operacao, "operacao": a.operacao, "nome_operador": a.nome_operador, "data_operacao": a.data_operacao, "tempo_abertura": a.tempo_abertura,
-                    "tipo_arvore": a.tipo_arvore, "justificativa": a.justificativa, "prazo": a.prazo
+                    "tipo_arvore": a.tipo_arvore, "justificativa": a.justificativa
                 } for a in escaladas
             ],
             "atrasadas": [
@@ -179,7 +178,7 @@ def listar_alertas():
                     "previsao_datetime": a.previsao_datetime, "respondido_em": a.respondido_em, "nome_lider": a.nome_lider, 
                     "status_operacao": a.status_operacao, "codigo": a.codigo, "unidade": a.unidade, "frente": a.frente, "equipamento": a.equipamento, "codigo_equipamento": a.codigo_equipamento,
                     "tipo_operacao": a.tipo_operacao, "operacao": a.operacao, "nome_operador": a.nome_operador, "data_operacao": a.data_operacao, "tempo_abertura": a.tempo_abertura,
-                    "tipo_arvore": a.tipo_arvore, "justificativa": a.justificativa, "prazo": a.prazo
+                    "tipo_arvore": a.tipo_arvore, "justificativa": a.justificativa
                 } for a in atrasadas
             ],
             "encerradas": [
@@ -188,7 +187,7 @@ def listar_alertas():
                     "previsao_datetime": a.previsao_datetime, "respondido_em": a.respondido_em, "nome_lider": a.nome_lider, 
                     "status_operacao": a.status_operacao, "horario_operando": a.horario_operando, "codigo": a.codigo, "unidade": a.unidade, "frente": a.frente, "equipamento": a.equipamento, "codigo_equipamento": a.codigo_equipamento,
                     "tipo_operacao": a.tipo_operacao, "operacao": a.operacao, "nome_operador": a.nome_operador, "data_operacao": a.data_operacao, "tempo_abertura": a.tempo_abertura,
-                    "tipo_arvore": a.tipo_arvore, "justificativa": a.justificativa, "prazo": a.prazo
+                    "tipo_arvore": a.tipo_arvore, "justificativa": a.justificativa
                 } for a in encerradas
             ]
         }

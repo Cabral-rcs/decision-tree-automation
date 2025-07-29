@@ -152,8 +152,7 @@ class AutoAlertScheduler:
                 data_operacao=alert_data.get('data_operacao'),
                 tempo_abertura=alert_data.get('tempo_abertura'),
                 tipo_arvore=alert_data.get('tipo_arvore'),
-                justificativa=alert_data.get('justificativa'),
-                prazo=alert_data.get('prazo')
+                justificativa=alert_data.get('justificativa')
             )
             db.add(novo_alerta)
             db.commit()
