@@ -123,6 +123,7 @@ async def telegram_webhook(request: Request):
             alerta.respondido_em = datetime.utcnow()
             alerta.nome_lider = nome_lider
             alerta.status = 'escalada'  # Muda status para escalada
+            alerta.prazo = resposta  # Preenche também o campo prazo
             
             # Força o commit e verifica se foi salvo
             db.commit()

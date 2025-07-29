@@ -31,7 +31,7 @@ def migrate_database():
         AutoAlertConfigBase.metadata.drop_all(bind=engine, checkfirst=True)
         
         print("📋 Criando novas tabelas...")
-        AlertaBase.metadata.create_all(bind=engine)
+        AlertaBase.metadata.create_all(bind=engine)  # Cria com novos campos
         AutoAlertConfigBase.metadata.create_all(bind=engine)
         init_db()
         

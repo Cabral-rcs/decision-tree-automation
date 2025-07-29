@@ -140,7 +140,20 @@ class AutoAlertScheduler:
                 problema=alert_data['problema'],
                 status='pendente',
                 status_operacao='não operando',
-                nome_lider=nome_lider
+                nome_lider=nome_lider,
+                codigo=alert_data.get('codigo'),
+                unidade=alert_data.get('unidade'),
+                frente=alert_data.get('frente'),
+                equipamento=alert_data.get('equipamento'),
+                codigo_equipamento=alert_data.get('codigo_equipamento'),
+                tipo_operacao=alert_data.get('tipo_operacao'),
+                operacao=alert_data.get('operacao'),
+                nome_operador=alert_data.get('nome_operador'),
+                data_operacao=alert_data.get('data_operacao'),
+                tempo_abertura=alert_data.get('tempo_abertura'),
+                tipo_arvore=alert_data.get('tipo_arvore'),
+                justificativa=alert_data.get('justificativa'),
+                prazo=alert_data.get('prazo')
             )
             db.add(novo_alerta)
             db.commit()

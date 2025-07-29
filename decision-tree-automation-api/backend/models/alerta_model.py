@@ -22,6 +22,20 @@ class Alerta(Base):
     criado_em = Column(DateTime(timezone=True), server_default=func.now())
     respondido_em = Column(DateTime(timezone=True), nullable=True)
     horario_operando = Column(DateTime(timezone=True), nullable=True)
+    # Novos campos para alerta completo
+    codigo = Column(String, nullable=True)
+    unidade = Column(String, nullable=True)
+    frente = Column(String, nullable=True)
+    equipamento = Column(String, nullable=True)
+    codigo_equipamento = Column(String, nullable=True)
+    tipo_operacao = Column(String, nullable=True)
+    operacao = Column(String, nullable=True)
+    nome_operador = Column(String, nullable=True)
+    data_operacao = Column(DateTime(timezone=True), nullable=True)
+    tempo_abertura = Column(String, nullable=True)
+    tipo_arvore = Column(String, nullable=True)
+    justificativa = Column(Text, nullable=True)
+    prazo = Column(String, nullable=True)
 
 # Função para inicializar o banco de dados (recriado a cada deploy)
 def init_database():

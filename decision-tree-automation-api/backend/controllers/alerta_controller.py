@@ -30,7 +30,20 @@ def criar_alerta(alerta: dict):
             problema=alerta['problema'],
             status='pendente',
             status_operacao='não operando',  # Status inicial
-            nome_lider=nome_lider
+            nome_lider=nome_lider,
+            codigo=alerta.get('codigo'),
+            unidade=alerta.get('unidade'),
+            frente=alerta.get('frente'),
+            equipamento=alerta.get('equipamento'),
+            codigo_equipamento=alerta.get('codigo_equipamento'),
+            tipo_operacao=alerta.get('tipo_operacao'),
+            operacao=alerta.get('operacao'),
+            nome_operador=alerta.get('nome_operador'),
+            data_operacao=alerta.get('data_operacao'),
+            tempo_abertura=alerta.get('tempo_abertura'),
+            tipo_arvore=alerta.get('tipo_arvore'),
+            justificativa=alerta.get('justificativa'),
+            prazo=alerta.get('prazo')
         )
         logger.info(f"Criando alerta: problema={alerta['problema']}, status_operacao=não operando")
         db.add(novo_alerta)
@@ -145,28 +158,37 @@ def listar_alertas():
             "pendentes": [
                 {
                     "id": a.id, "chat_id": a.chat_id, "problema": a.problema, "criado_em": a.criado_em, 
-                    "nome_lider": a.nome_lider, "status_operacao": a.status_operacao, "previsao": None
+                    "nome_lider": a.nome_lider, "status_operacao": a.status_operacao, "previsao": None,
+                    "codigo": a.codigo, "unidade": a.unidade, "frente": a.frente, "equipamento": a.equipamento, "codigo_equipamento": a.codigo_equipamento,
+                    "tipo_operacao": a.tipo_operacao, "operacao": a.operacao, "nome_operador": a.nome_operador, "data_operacao": a.data_operacao, "tempo_abertura": a.tempo_abertura,
+                    "tipo_arvore": a.tipo_arvore, "justificativa": a.justificativa, "prazo": a.prazo
                 } for a in pendentes
             ],
             "escaladas": [
                 {
                     "id": a.id, "chat_id": a.chat_id, "problema": a.problema, "previsao": a.previsao, 
                     "previsao_datetime": a.previsao_datetime, "respondido_em": a.respondido_em, "nome_lider": a.nome_lider, 
-                    "status_operacao": a.status_operacao
+                    "status_operacao": a.status_operacao, "codigo": a.codigo, "unidade": a.unidade, "frente": a.frente, "equipamento": a.equipamento, "codigo_equipamento": a.codigo_equipamento,
+                    "tipo_operacao": a.tipo_operacao, "operacao": a.operacao, "nome_operador": a.nome_operador, "data_operacao": a.data_operacao, "tempo_abertura": a.tempo_abertura,
+                    "tipo_arvore": a.tipo_arvore, "justificativa": a.justificativa, "prazo": a.prazo
                 } for a in escaladas
             ],
             "atrasadas": [
                 {
                     "id": a.id, "chat_id": a.chat_id, "problema": a.problema, "previsao": a.previsao, 
                     "previsao_datetime": a.previsao_datetime, "respondido_em": a.respondido_em, "nome_lider": a.nome_lider, 
-                    "status_operacao": a.status_operacao
+                    "status_operacao": a.status_operacao, "codigo": a.codigo, "unidade": a.unidade, "frente": a.frente, "equipamento": a.equipamento, "codigo_equipamento": a.codigo_equipamento,
+                    "tipo_operacao": a.tipo_operacao, "operacao": a.operacao, "nome_operador": a.nome_operador, "data_operacao": a.data_operacao, "tempo_abertura": a.tempo_abertura,
+                    "tipo_arvore": a.tipo_arvore, "justificativa": a.justificativa, "prazo": a.prazo
                 } for a in atrasadas
             ],
             "encerradas": [
                 {
                     "id": a.id, "chat_id": a.chat_id, "problema": a.problema, "previsao": a.previsao, 
                     "previsao_datetime": a.previsao_datetime, "respondido_em": a.respondido_em, "nome_lider": a.nome_lider, 
-                    "status_operacao": a.status_operacao, "horario_operando": a.horario_operando
+                    "status_operacao": a.status_operacao, "horario_operando": a.horario_operando, "codigo": a.codigo, "unidade": a.unidade, "frente": a.frente, "equipamento": a.equipamento, "codigo_equipamento": a.codigo_equipamento,
+                    "tipo_operacao": a.tipo_operacao, "operacao": a.operacao, "nome_operador": a.nome_operador, "data_operacao": a.data_operacao, "tempo_abertura": a.tempo_abertura,
+                    "tipo_arvore": a.tipo_arvore, "justificativa": a.justificativa, "prazo": a.prazo
                 } for a in encerradas
             ]
         }
