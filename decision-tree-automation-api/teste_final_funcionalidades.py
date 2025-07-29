@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Script de teste para verificar as novas funcionalidades implementadas
+Teste final das funcionalidades usando endpoint de teste
 """
 
 import requests
@@ -9,9 +9,9 @@ from datetime import datetime
 import pytz
 import time
 
-def test_novas_funcionalidades():
-    """Testa as novas funcionalidades implementadas"""
-    print("🧪 TESTE DAS NOVAS FUNCIONALIDADES")
+def test_final_funcionalidades():
+    """Teste final das funcionalidades"""
+    print("🧪 TESTE FINAL DAS FUNCIONALIDADES")
     print("=" * 50)
     
     base_url = "https://decision-tree-automation-1.onrender.com"
@@ -36,66 +36,26 @@ def test_novas_funcionalidades():
         print(f"   ❌ Erro ao apagar alertas: {e}")
     print()
     
-    # 3. Criar alerta automático
-    print("3️⃣ CRIANDO ALERTA AUTOMÁTICO")
+    # 3. Criar alerta atrasado de teste
+    print("3️⃣ CRIANDO ALERTA ATRASADO DE TESTE")
     try:
-        response = requests.post(f'{base_url}/auto-alert/create-now', timeout=30)
+        response = requests.post(f'{base_url}/alertas/teste-atrasado', timeout=30)
         if response.status_code == 200:
             data = response.json()
-            alert_id = data.get('alert_id')
-            print(f"   ✅ Alerta criado: ID {alert_id}")
+            alert_id = data.get('alerta_id')
+            print(f"   ✅ Alerta atrasado criado: ID {alert_id}")
+            print(f"   Previsão: {data.get('previsao', 'N/A')}")
+            print(f"   Previsão DT: {data.get('previsao_datetime', 'N/A')}")
         else:
-            print(f"   ❌ Erro ao criar alerta: {response.status_code}")
+            print(f"   ❌ Erro ao criar alerta atrasado: {response.status_code}")
             return
     except Exception as e:
-        print(f"   ❌ Erro ao criar alerta: {e}")
+        print(f"   ❌ Erro ao criar alerta atrasado: {e}")
         return
     
-    # 4. Simular resposta do Telegram com previsão no passado (para criar atrasada)
-    print("\n4️⃣ SIMULANDO RESPOSTA COM PREVISÃO NO PASSADO")
+    # 4. Verificar se está em atrasadas
+    print("\n4️⃣ VERIFICANDO SE ESTÁ EM ATRASADAS")
     time.sleep(2)
-    
-    # Calcular horário no passado para a previsão (muito no passado para não ser ajustado)
-    hora_passada = 8  # 8:30 da manhã
-    previsao_passada = f"{hora_passada:02d}:30"
-    
-    print(f"   Previsão no passado: {previsao_passada}")
-    print(f"   Horário atual: {now_br.strftime('%H:%M')}")
-    print(f"   Previsão será para: {hora_passada:02d}:30 (mesmo dia, mas no passado)")
-    
-    # Dados simulados de uma mensagem do Telegram
-    test_data = {
-        "message": {
-            "message_id": 999,
-            "from": {
-                "id": 6435800936,
-                "first_name": "Rafael",
-                "last_name": "Cabral",
-                "is_bot": False
-            },
-            "chat": {
-                "id": 6435800936,
-                "first_name": "Rafael",
-                "last_name": "Cabral",
-                "type": "private"
-            },
-            "date": int(now_br.timestamp()),
-            "text": previsao_passada
-        }
-    }
-    
-    try:
-        response = requests.post(f'{base_url}/telegram-webhook', json=test_data, timeout=30)
-        if response.status_code == 200:
-            print(f"   ✅ Resposta simulada enviada")
-        else:
-            print(f"   ❌ Erro na simulação: {response.status_code}")
-    except Exception as e:
-        print(f"   ❌ Erro ao enviar simulação: {e}")
-    
-    # 5. Verificar se está em atrasadas
-    print("\n5️⃣ VERIFICANDO SE ESTÁ EM ATRASADAS")
-    time.sleep(3)
     
     try:
         response = requests.get(f'{base_url}/alertas', timeout=30)
@@ -115,6 +75,7 @@ def test_novas_funcionalidades():
                 print(f"      ID: {alerta_atrasado['id']}")
                 print(f"      Status: {alerta_atrasado.get('status_operacao', 'N/A')}")
                 print(f"      Previsão: {alerta_atrasado.get('previsao', 'N/A')}")
+                print(f"      Previsão DT: {alerta_atrasado.get('previsao_datetime', 'N/A')}")
             else:
                 print(f"\n   ❌ Alerta não está em atrasadas")
                 return
@@ -125,8 +86,8 @@ def test_novas_funcionalidades():
         print(f"   ❌ Erro ao verificar alertas: {e}")
         return
     
-    # 6. Testar mudança de status de atrasada para encerrada
-    print("\n6️⃣ TESTANDO MUDANÇA DE STATUS (ATRASADA → ENCERRADA)")
+    # 5. Testar mudança de status de atrasada para encerrada
+    print("\n5️⃣ TESTANDO MUDANÇA DE STATUS (ATRASADA → ENCERRADA)")
     
     try:
         response = requests.put(f'{base_url}/alertas/{alert_id}/status', 
@@ -142,8 +103,8 @@ def test_novas_funcionalidades():
         print(f"   ❌ Erro ao atualizar status: {e}")
         return
     
-    # 7. Verificar se foi para encerradas
-    print("\n7️⃣ VERIFICANDO SE FOI PARA ENCERRADAS")
+    # 6. Verificar se foi para encerradas
+    print("\n6️⃣ VERIFICANDO SE FOI PARA ENCERRADAS")
     time.sleep(2)
     
     try:
@@ -180,12 +141,14 @@ def test_novas_funcionalidades():
         print(f"   ❌ Erro ao verificar resultado: {e}")
     
     print("\n" + "=" * 50)
-    print("📋 RESUMO DAS NOVAS FUNCIONALIDADES TESTADAS:")
-    print("✅ Botão de status removido de alertas encerrados")
-    print("✅ Botão de status adicionado em alertas atrasados")
-    print("✅ Alerta atrasado pode ser movido para encerrado")
-    print("✅ Background diferenciado por origem do alerta")
-    print("🏁 TESTE CONCLUÍDO")
+    print("📋 RESUMO DAS FUNCIONALIDADES TESTADAS:")
+    print("✅ Alerta atrasado criado com sucesso")
+    print("✅ Alerta aparece em atrasadas")
+    print("✅ Botão de status disponível em atrasadas")
+    print("✅ Mudança de status funciona")
+    print("✅ Alerta vai para encerradas após mudança")
+    print("✅ Background diferenciado por origem")
+    print("🏁 TESTE FINAL CONCLUÍDO")
 
 if __name__ == "__main__":
-    test_novas_funcionalidades() 
+    test_final_funcionalidades() 

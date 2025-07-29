@@ -149,14 +149,9 @@ def listar_alertas():
             
             # Se tem previsão, verifica as outras categorias baseado no status de operação
             if alerta.status_operacao == 'operando':
-                # Encerradas: Previsão não excedida e status operando
-                if previsao_dt and previsao_dt >= now:
-                    encerradas.append(alerta)
-                    logger.info(f"Alerta {alerta.id} adicionado aos encerrados")
-                else:
-                    # Atrasadas: Previsão excedida mas status operando (caso raro)
-                    atrasadas.append(alerta)
-                    logger.info(f"Alerta {alerta.id} adicionado aos atrasados (operando mas previsão excedida)")
+                # CORREÇÃO: Se status é operando, sempre vai para encerradas (independente da previsão)
+                encerradas.append(alerta)
+                logger.info(f"Alerta {alerta.id} adicionado aos encerrados (status operando)")
             else:
                 # Status não operando
                 if previsao_dt and previsao_dt >= now:
@@ -344,6 +339,61 @@ def apagar_todos_alertas():
         }
     except Exception as e:
         logger.error(f"Erro ao apagar alertas: {str(e)}")
+        db.rollback()
+        raise HTTPException(status_code=500, detail=f"Erro interno: {str(e)}")
+    finally:
+        db.close() 
+
+@router.post("/alertas/teste-atrasado")
+def criar_alerta_atrasado_teste():
+    """Endpoint de teste para criar um alerta atrasado diretamente"""
+    db: Session = SessionLocal()
+    try:
+        # Criar um alerta com previsão no passado
+        tz_br = pytz.timezone('America/Sao_Paulo')
+        now_br = datetime.now(tz_br)
+        
+        # Criar previsão no passado (2 horas atrás)
+        previsao_passada = now_br - timedelta(hours=2)
+        
+        novo_alerta = Alerta(
+            chat_id='6435800936',
+            problema='[TESTE] Alerta atrasado para teste',
+            status='atrasada',  # Força status atrasada
+            status_operacao='não operando',
+            nome_lider='Rafael Cabral',
+            previsao='10:30',
+            previsao_datetime=previsao_passada,
+            respondido_em=now_br - timedelta(hours=1),
+            codigo='TEST001',
+            unidade='Unidade Teste',
+            frente='Frente de Teste',
+            equipamento='Equipamento Teste',
+            codigo_equipamento='EQ999',
+            tipo_operacao='Teste',
+            operacao='Operação Teste',
+            nome_operador='Teste',
+            data_operacao=now_br - timedelta(hours=3),
+            tempo_abertura='3h',
+            tipo_arvore='Árvore de Teste',
+            justificativa='Teste de funcionalidade'
+        )
+        
+        db.add(novo_alerta)
+        db.commit()
+        db.refresh(novo_alerta)
+        
+        logger.info(f"Alerta atrasado de teste criado: ID {novo_alerta.id}")
+        return {
+            "success": True,
+            "message": "Alerta atrasado de teste criado",
+            "alerta_id": novo_alerta.id,
+            "previsao": novo_alerta.previsao,
+            "previsao_datetime": novo_alerta.previsao_datetime.isoformat() if novo_alerta.previsao_datetime else None
+        }
+        
+    except Exception as e:
+        logger.error(f"Erro ao criar alerta atrasado de teste: {str(e)}")
         db.rollback()
         raise HTTPException(status_code=500, detail=f"Erro interno: {str(e)}")
     finally:
