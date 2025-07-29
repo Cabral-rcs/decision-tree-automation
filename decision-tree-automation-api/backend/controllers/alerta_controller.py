@@ -132,10 +132,18 @@ def listar_alertas():
                 logger.info(f"Alerta {alerta.id} adicionado aos pendentes (sem previsão)")
                 continue
             
+            # Garante que previsao_datetime tem timezone para comparação
+            previsao_dt = alerta.previsao_datetime
+            if previsao_dt and previsao_dt.tzinfo is None:
+                # Se não tem timezone, assume que é UTC e converte para Brasília
+                tz_br = pytz.timezone('America/Sao_Paulo')
+                previsao_dt = pytz.utc.localize(previsao_dt).astimezone(tz_br)
+                logger.info(f"Alerta {alerta.id}: previsao_datetime sem timezone, convertido para: {previsao_dt}")
+            
             # Se tem previsão, verifica as outras categorias baseado no status de operação
             if alerta.status_operacao == 'operando':
                 # Encerradas: Previsão não excedida e status operando
-                if alerta.previsao_datetime >= now:
+                if previsao_dt and previsao_dt >= now:
                     encerradas.append(alerta)
                     logger.info(f"Alerta {alerta.id} adicionado aos encerrados")
                 else:
@@ -144,7 +152,7 @@ def listar_alertas():
                     logger.info(f"Alerta {alerta.id} adicionado aos atrasados (operando mas previsão excedida)")
             else:
                 # Status não operando
-                if alerta.previsao_datetime >= now:
+                if previsao_dt and previsao_dt >= now:
                     # Escaladas: Com previsão, dentro da previsão e status não operando
                     escaladas.append(alerta)
                     logger.info(f"Alerta {alerta.id} adicionado aos escalados (com previsão: {alerta.previsao})")
@@ -193,6 +201,8 @@ def listar_alertas():
         }
     except Exception as e:
         logger.error(f"Erro ao listar alertas: {str(e)}")
+        import traceback
+        logger.error(f"Traceback: {traceback.format_exc()}")
         raise HTTPException(status_code=500, detail=f"Erro interno: {str(e)}")
     finally:
         db.close()

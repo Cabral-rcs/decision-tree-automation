@@ -164,7 +164,20 @@ async def telegram_webhook(request: Request):
             
             # Montar datetime da previsão para o mesmo dia da resposta
             hora, minuto = match.groups()
-            previsao_dt = msg_br.replace(hour=int(hora), minute=int(minuto), second=0, microsecond=0)
+            
+            # Garante que msg_br tem timezone
+            if msg_br and msg_br.tzinfo is None:
+                tz_br = pytz.timezone('America/Sao_Paulo')
+                msg_br = pytz.utc.localize(msg_br).astimezone(tz_br)
+            
+            # Cria o datetime da previsão no mesmo dia da mensagem
+            if msg_br:
+                previsao_dt = msg_br.replace(hour=int(hora), minute=int(minuto), second=0, microsecond=0)
+            else:
+                # Fallback: usa o horário atual de Brasília
+                tz_br = pytz.timezone('America/Sao_Paulo')
+                now_br = datetime.now(tz_br)
+                previsao_dt = now_br.replace(hour=int(hora), minute=int(minuto), second=0, microsecond=0)
             
             logger.info(f'Previsão processada: {resposta} -> {previsao_dt}')
             print(f'⏰ Previsão processada: {resposta} -> {previsao_dt}')
@@ -228,17 +241,27 @@ async def telegram_webhook(request: Request):
             # Armazena também como resposta geral (opcional)
             if user_id and resposta and msg_utc:
                 try:
+                    # Converte a string ISO para objeto datetime
+                    from datetime import datetime
+                    if isinstance(msg_utc, str):
+                        # Se for string, converte para datetime
+                        timestamp_dt = datetime.fromisoformat(msg_utc.replace('Z', '+00:00'))
+                    else:
+                        # Se já for datetime, usa diretamente
+                        timestamp_dt = msg_utc
+                    
                     add_response({
                         'user_id': str(user_id),
                         'pergunta': alerta.problema,
                         'resposta': resposta,
-                        'timestamp': msg_utc.isoformat()
+                        'timestamp': timestamp_dt
                     })
                     logger.info(f'Resposta armazenada no histórico')
                     print(f'💾 Resposta armazenada no histórico')
                 except Exception as resp_error:
                     logger.error(f'Erro ao armazenar resposta: {resp_error}')
                     print(f'❌ Erro ao armazenar resposta: {resp_error}')
+                    # Continua mesmo se falhar o armazenamento da resposta
             
             return {
                 "status": "success", 

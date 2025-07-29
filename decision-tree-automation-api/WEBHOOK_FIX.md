@@ -30,6 +30,28 @@
 ### 5. **Script de Teste**
 - ✅ `test_webhook.py` - Script completo de diagnóstico
 
+### 6. **Correções de Timezone** ⭐ **NOVO**
+- ✅ Conversão correta de timestamp ISO para objeto datetime
+- ✅ Garantia de timezone em todas as comparações de datetime
+- ✅ Fallback para criação de previsão quando data da mensagem não está disponível
+- ✅ Correção de erro "can't compare offset-naive and offset-aware datetimes"
+- ✅ `test_timezone_fix.py` - Script de teste específico para timezone
+
+## Problemas Corrigidos
+
+### ❌ **Erro de Timestamp**
+```
+ERROR: SQLite DateTime type only accepts Python datetime and date objects as input.
+[parameters: [{'timestamp': '2025-07-29T15:25:41'}]]
+```
+**✅ Solução**: Conversão de string ISO para objeto datetime antes do armazenamento
+
+### ❌ **Erro de Comparação de Timezone**
+```
+ERROR: can't compare offset-naive and offset-aware datetimes
+```
+**✅ Solução**: Garantia de timezone em todas as comparações de datetime
+
 ## Como Testar
 
 ### 1. **Verificar Status Atual**
@@ -62,10 +84,17 @@ cd decision-tree-automation-api
 python test_webhook.py
 ```
 
-### 5. **Teste Manual**
+### 5. **Teste de Timezone** ⭐ **NOVO**
+```bash
+cd decision-tree-automation-api
+python test_timezone_fix.py
+```
+
+### 6. **Teste Manual**
 1. Envie uma mensagem para o bot no Telegram
 2. Verifique os logs do servidor
 3. Confirme se o alerta foi atualizado
+4. Verifique se aparece na categoria correta (Escaladas)
 
 ## Endpoints Disponíveis
 
@@ -80,7 +109,7 @@ python test_webhook.py
 
 ## Logs Esperados
 
-### Webhook Funcionando
+### Webhook Funcionando (Corrigido)
 ```
 🚀 INICIANDO PROCESSAMENTO DO WEBHOOK
 📋 Headers recebidos: {...}
@@ -89,13 +118,21 @@ python test_webhook.py
 👤 Processando mensagem de Rafael Cabral (ID: 6435800936): 15:30
 ✅ Usuário autorizado: Rafael Cabral (ID: 6435800936)
 🎯 Alerta a ser processado: ID 1
-⏰ Previsão processada: 15:30 -> 2024-01-01 15:30:00-03:00
+⏰ Previsão processada: 15:30 -> 2025-07-29 15:30:00-03:00
 ✅ Alerta 1 atualizado com sucesso - Previsão: 15:30
+💾 Resposta armazenada no histórico
 📤 Confirmação enviada
 🏁 FINALIZANDO PROCESSAMENTO DO WEBHOOK
 ```
 
-### Problemas Comuns
+### Listagem de Alertas (Corrigida)
+```
+INFO: Listando alertas - horário atual: 2025-07-29 12:25:43-03:00
+INFO: Processando alerta ID 1: previsao=12:57, status_operacao=não operando
+INFO: Alerta 1 adicionado aos escalados (com previsão: 12:57)
+```
+
+## Problemas Comuns
 
 #### 1. **Webhook não configurado**
 ```
@@ -121,6 +158,18 @@ python test_webhook.py
 ```
 **Solução**: Apenas Rafael Cabral (ID: 6435800936) pode responder
 
+#### 5. **Erro de timezone** ⭐ **CORRIGIDO**
+```
+❌ Erro ao listar alertas: can't compare offset-naive and offset-aware datetimes
+```
+**✅ Solução**: Implementada correção automática de timezone
+
+#### 6. **Erro de timestamp** ⭐ **CORRIGIDO**
+```
+❌ Erro ao armazenar resposta: SQLite DateTime type only accepts Python datetime objects
+```
+**✅ Solução**: Conversão automática de string ISO para datetime
+
 ## Variáveis de Ambiente
 
 ```bash
@@ -134,8 +183,9 @@ RENDER_EXTERNAL_URL=https://decision-tree-automation-1.onrender.com
 1. **Identificar problema**: Use `/webhook-debug`
 2. **Reconfigurar**: Use `/telegram-force-setup`
 3. **Testar**: Use `/telegram-test-webhook`
-4. **Verificar**: Envie mensagem real no Telegram
-5. **Monitorar**: Acompanhe os logs
+4. **Testar timezone**: Use `python test_timezone_fix.py`
+5. **Verificar**: Envie mensagem real no Telegram
+6. **Monitorar**: Acompanhe os logs
 
 ## Status de Sucesso
 
@@ -145,11 +195,16 @@ RENDER_EXTERNAL_URL=https://decision-tree-automation-1.onrender.com
 - ✅ Previsões sendo processadas
 - ✅ Alertas sendo atualizados
 - ✅ Confirmações sendo enviadas
+- ✅ **Timezone corrigido** ⭐
+- ✅ **Timestamp corrigido** ⭐
+- ✅ **Listagem funcionando** ⭐
 
 ## Próximos Passos
 
 1. Execute o script de teste: `python test_webhook.py`
-2. Force a reconfiguração: `/telegram-force-setup`
-3. Envie uma mensagem de teste no Telegram
-4. Verifique se o alerta foi atualizado
-5. Monitore os logs para confirmar funcionamento 
+2. Execute o teste de timezone: `python test_timezone_fix.py`
+3. Force a reconfiguração: `/telegram-force-setup`
+4. Envie uma mensagem de teste no Telegram
+5. Verifique se o alerta foi atualizado corretamente
+6. Confirme que aparece na categoria "Escaladas"
+7. Monitore os logs para confirmar funcionamento 
