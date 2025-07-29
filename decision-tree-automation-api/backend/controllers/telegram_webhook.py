@@ -2,7 +2,7 @@
 from fastapi import Request, HTTPException
 from backend.models.responses_model import add_response, SessionLocal
 from backend.models.alerta_model import Alerta
-from datetime import datetime
+from datetime import datetime, timedelta
 from backend.controllers.telegram_scheduler import enviar_pergunta_para_usuario
 import pytz
 import re
@@ -162,30 +162,19 @@ async def telegram_webhook(request: Request):
                 
                 return {"status": "invalid_format", "msg": "Formato inválido"}
             
-            # Montar datetime da previsão para o mesmo dia da resposta
+            # Montar datetime da previsão - CORREÇÃO: Sempre usar horário atual como base
             hora, minuto = match.groups()
             
-            # Garante que msg_br tem timezone
-            if msg_br and msg_br.tzinfo is None:
-                tz_br = pytz.timezone('America/Sao_Paulo')
-                msg_br = pytz.utc.localize(msg_br).astimezone(tz_br)
-            
-            # Cria o datetime da previsão no mesmo dia da mensagem
-            if msg_br:
-                previsao_dt = msg_br.replace(hour=int(hora), minute=int(minuto), second=0, microsecond=0)
-            else:
-                # Fallback: usa o horário atual de Brasília
-                tz_br = pytz.timezone('America/Sao_Paulo')
-                now_br = datetime.now(tz_br)
-                previsao_dt = now_br.replace(hour=int(hora), minute=int(minuto), second=0, microsecond=0)
-            
-            # Verifica se a previsão está no passado e ajusta para o próximo dia se necessário
+            # CORREÇÃO: Sempre usar o horário atual de Brasília como base, não a data da mensagem
             tz_br = pytz.timezone('America/Sao_Paulo')
             now_br = datetime.now(tz_br)
             
+            # Cria o datetime da previsão para HOJE com o horário informado
+            previsao_dt = now_br.replace(hour=int(hora), minute=int(minuto), second=0, microsecond=0)
+            
+            # CORREÇÃO: Se a previsão está no passado, move para o próximo dia
             if previsao_dt <= now_br:
                 # Se a previsão está no passado, move para o próximo dia
-                from datetime import timedelta
                 previsao_dt = previsao_dt + timedelta(days=1)
                 logger.info(f'Previsão ajustada para o próximo dia: {resposta} -> {previsao_dt}')
                 print(f'⏰ Previsão ajustada para o próximo dia: {resposta} -> {previsao_dt}')
@@ -197,10 +186,10 @@ async def telegram_webhook(request: Request):
             logger.info(f'Atualizando alerta {alerta.id} com previsão: {resposta}')
             print(f'🔄 Atualizando alerta {alerta.id} com previsão: {resposta}')
             
-            # Atualiza apenas os campos de previsão
+            # CORREÇÃO: Usar o horário atual real para respondido_em, não dados fictícios
             alerta.previsao = resposta
             alerta.previsao_datetime = previsao_dt
-            alerta.respondido_em = alerta.criado_em  # Usa o tempo real de criação do alerta
+            alerta.respondido_em = now_br  # Usa o horário atual real
             alerta.nome_lider = nome_lider
             alerta.status = 'escalada'  # Muda status para escalada
             

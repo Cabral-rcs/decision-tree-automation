@@ -132,13 +132,20 @@ def listar_alertas():
                 logger.info(f"Alerta {alerta.id} adicionado aos pendentes (sem previsão)")
                 continue
             
-            # Garante que previsao_datetime tem timezone para comparação
+            # CORREÇÃO: Garante que previsao_datetime tem timezone para comparação
             previsao_dt = alerta.previsao_datetime
-            if previsao_dt and previsao_dt.tzinfo is None:
-                # Se não tem timezone, assume que é UTC e converte para Brasília
-                tz_br = pytz.timezone('America/Sao_Paulo')
-                previsao_dt = pytz.utc.localize(previsao_dt).astimezone(tz_br)
-                logger.info(f"Alerta {alerta.id}: previsao_datetime sem timezone, convertido para: {previsao_dt}")
+            if previsao_dt:
+                # Se não tem timezone, assume que é já em Brasília (não UTC)
+                if previsao_dt.tzinfo is None:
+                    tz_br = pytz.timezone('America/Sao_Paulo')
+                    # CORREÇÃO: Assume que já está em Brasília, não UTC
+                    previsao_dt = tz_br.localize(previsao_dt)
+                    logger.info(f"Alerta {alerta.id}: previsao_datetime sem timezone, assumido como Brasília: {previsao_dt}")
+                else:
+                    # Se já tem timezone, converte para Brasília
+                    tz_br = pytz.timezone('America/Sao_Paulo')
+                    previsao_dt = previsao_dt.astimezone(tz_br)
+                    logger.info(f"Alerta {alerta.id}: previsao_datetime com timezone, convertido para Brasília: {previsao_dt}")
             
             # Se tem previsão, verifica as outras categorias baseado no status de operação
             if alerta.status_operacao == 'operando':

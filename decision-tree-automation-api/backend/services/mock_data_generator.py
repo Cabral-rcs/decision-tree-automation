@@ -79,13 +79,11 @@ class MockDataGenerator:
         # Gera código único
         codigo = random.randint(10000, 99999)
         
-        # Gera data/hora realista (últimas 24 horas)
-        data_operacao = datetime.now() - timedelta(
-            hours=random.randint(0, 24),
-            minutes=random.randint(0, 59)
-        )
+        # CORREÇÃO: Usar horário atual real em vez de datas fictícias no passado
+        # Isso evita conflitos na categorização de alertas
+        data_operacao = datetime.now()  # Horário atual real
         
-        # Calcula tempo de abertura
+        # Calcula tempo de abertura (será sempre 0h 0min para alertas recém-criados)
         tempo_abertura = datetime.now() - data_operacao
         tempo_abertura_str = f"{tempo_abertura.seconds // 3600}h {(tempo_abertura.seconds % 3600) // 60}min"
         
@@ -99,7 +97,7 @@ class MockDataGenerator:
             "tipo_operacao": tipo_operacao,
             "operacao": operacao,
             "nome_operador": "Rafael Cabral",
-            "data_operacao": data_operacao,  # Objeto datetime, não string
+            "data_operacao": data_operacao,  # Horário atual real
             "tempo_abertura": tempo_abertura_str,
             "tipo_arvore": "Árvore de Manutenção",
             "justificativa": None,  # Campo não preenchido automaticamente
