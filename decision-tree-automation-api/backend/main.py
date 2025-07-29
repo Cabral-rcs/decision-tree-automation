@@ -12,6 +12,7 @@ import logging
 from backend.controllers.alerta_controller import router as alerta_router
 from backend.controllers.auto_alert_controller import router as auto_alert_router
 from sqlalchemy import inspect
+import datetime
 
 # Configuração de logging
 logging.basicConfig(level=logging.INFO)
@@ -463,6 +464,49 @@ def check_frontend_version():
         "check_time": datetime.datetime.now().isoformat()
     }
 
+@app.get("/webhook-debug")
+def webhook_debug():
+    """Endpoint para debug completo do webhook"""
+    try:
+        import requests
+        from backend.config import TELEGRAM_API_URL
+        
+        # Verifica informações do webhook
+        webhook_info_response = requests.get(f'{TELEGRAM_API_URL}/getWebhookInfo', timeout=30)
+        webhook_info = webhook_info_response.json() if webhook_info_response.ok else {"error": webhook_info_response.text}
+        
+        # Verifica informações do bot
+        bot_info_response = requests.get(f'{TELEGRAM_API_URL}/getMe', timeout=30)
+        bot_info = bot_info_response.json() if bot_info_response.ok else {"error": bot_info_response.text}
+        
+        # Informações do ambiente
+        render_url = os.getenv('RENDER_EXTERNAL_URL', 'https://decision-tree-automation-1.onrender.com')
+        webhook_url = f"{render_url}/telegram-webhook"
+        
+        return {
+            "timestamp": datetime.datetime.now().isoformat(),
+            "environment": {
+                "render_url": render_url,
+                "webhook_url": webhook_url,
+                "telegram_api_url": TELEGRAM_API_URL,
+                "chat_ids": CHAT_IDS
+            },
+            "webhook_info": webhook_info,
+            "bot_info": bot_info,
+            "webhook_status": {
+                "is_configured": webhook_info.get("ok", False) and webhook_info.get("result", {}).get("url") == webhook_url,
+                "current_url": webhook_info.get("result", {}).get("url"),
+                "expected_url": webhook_url,
+                "pending_updates": webhook_info.get("result", {}).get("pending_update_count", 0),
+                "last_error": webhook_info.get("result", {}).get("last_error_message")
+            }
+        }
+    except Exception as e:
+        return {
+            "error": str(e),
+            "timestamp": datetime.datetime.now().isoformat()
+        }
+
 # Ao iniciar o sistema, inicializa o banco e envia a primeira pergunta
 @app.on_event("startup")
 def inicializar_sistema():
@@ -509,6 +553,41 @@ def inicializar_sistema():
     except Exception as e:
         logger.error(f"❌ Erro ao inicializar banco de dados: {e}")
         print(f"❌ Erro ao inicializar banco de dados: {e}")
+    
+    # Configura o webhook do Telegram automaticamente
+    try:
+        logger.info("🔧 Configurando webhook do Telegram...")
+        print("🔧 Configurando webhook do Telegram...")
+        
+        import requests
+        from backend.config import TELEGRAM_API_URL
+        
+        # URL do webhook - usa a URL atual do Render
+        render_url = os.getenv('RENDER_EXTERNAL_URL', 'https://decision-tree-automation-1.onrender.com')
+        webhook_url = f"{render_url}/telegram-webhook"
+        
+        logger.info(f"🔗 URL do webhook: {webhook_url}")
+        print(f"🔗 URL do webhook: {webhook_url}")
+        
+        payload = {
+            'url': webhook_url,
+            'allowed_updates': ['message'],
+            'drop_pending_updates': True
+        }
+        
+        response = requests.post(f'{TELEGRAM_API_URL}/setWebhook', json=payload, timeout=30)
+        
+        if response.ok:
+            result = response.json()
+            logger.info(f"✅ Webhook configurado com sucesso: {result}")
+            print(f"✅ Webhook configurado com sucesso: {result}")
+        else:
+            logger.error(f"❌ Erro ao configurar webhook: {response.status_code} - {response.text}")
+            print(f"❌ Erro ao configurar webhook: {response.status_code} - {response.text}")
+            
+    except Exception as e:
+        logger.error(f"❌ Erro ao configurar webhook: {e}")
+        print(f"❌ Erro ao configurar webhook: {e}")
     
     try:
         for user_id in CHAT_IDS:

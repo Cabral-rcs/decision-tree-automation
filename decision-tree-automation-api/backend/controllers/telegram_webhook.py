@@ -1,5 +1,5 @@
 # telegram_webhook.py - Controller para integração com o bot do Telegram
-from fastapi import Request
+from fastapi import Request, HTTPException
 from backend.models.responses_model import add_response, SessionLocal
 from backend.models.alerta_model import Alerta
 from datetime import datetime
@@ -9,8 +9,11 @@ import re
 from backend.config import TELEGRAM_API_URL
 import requests
 import logging
+import json
+import traceback
 
-# Configurar logging
+# Configurar logging mais detalhado
+logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 # Função para processar webhooks do Telegram
@@ -19,15 +22,34 @@ async def telegram_webhook(request: Request):
     logger.info("🚀 INICIANDO PROCESSAMENTO DO WEBHOOK")
     print("🚀 INICIANDO PROCESSAMENTO DO WEBHOOK")
     
+    # Log de headers para debug
+    headers = dict(request.headers)
+    logger.info(f"📋 Headers recebidos: {json.dumps(headers, indent=2)}")
+    print(f"📋 Headers recebidos: {json.dumps(headers, indent=2)}")
+    
     try:
-        data = await request.json()
-        logger.info(f'📥 Dados recebidos no webhook: {data}')
-        print(f'📥 Dados recebidos no webhook: {data}')
+        # Log do corpo da requisição
+        body = await request.body()
+        logger.info(f"📦 Body recebido (bytes): {len(body)} bytes")
+        print(f"📦 Body recebido (bytes): {len(body)} bytes")
+        
+        # Tenta fazer parse do JSON
+        try:
+            data = await request.json()
+            logger.info(f'📥 Dados JSON recebidos no webhook: {json.dumps(data, indent=2)}')
+            print(f'📥 Dados JSON recebidos no webhook: {json.dumps(data, indent=2)}')
+        except Exception as json_error:
+            logger.error(f'❌ Erro ao fazer parse do JSON: {json_error}')
+            print(f'❌ Erro ao fazer parse do JSON: {json_error}')
+            print(f'📄 Conteúdo raw: {body.decode("utf-8", errors="ignore")}')
+            return {"status": "error", "msg": f"Erro ao fazer parse do JSON: {json_error}"}
         
         # Verifica se é uma mensagem válida
         if 'message' not in data:
             logger.warning('❌ Webhook não contém mensagem')
             print('❌ Webhook não contém mensagem')
+            logger.info(f'📋 Estrutura dos dados: {list(data.keys())}')
+            print(f'📋 Estrutura dos dados: {list(data.keys())}')
             return {"status": "ignored", "msg": "Não é uma mensagem"}
         
         message = data.get('message', {})
@@ -35,6 +57,10 @@ async def telegram_webhook(request: Request):
         nome_lider = message.get('from', {}).get('first_name', '')
         if message.get('from', {}).get('last_name'):
             nome_lider += ' ' + message['from']['last_name']
+        
+        # Log detalhado da mensagem
+        logger.info(f'📨 Mensagem detalhada: {json.dumps(message, indent=2)}')
+        print(f'📨 Mensagem detalhada: {json.dumps(message, indent=2)}')
         
         # Data da mensagem em UTC
         msg_utc = datetime.utcfromtimestamp(message.get('date')) if message.get('date') else None
@@ -45,10 +71,15 @@ async def telegram_webhook(request: Request):
         
         logger.info(f'👤 Processando mensagem de {nome_lider} (ID: {user_id}): {resposta}')
         print(f'👤 Processando mensagem de {nome_lider} (ID: {user_id}): {resposta}')
+        print(f'⏰ Data da mensagem (UTC): {msg_utc}')
+        print(f'⏰ Data da mensagem (BR): {msg_br}')
         
         # Verifica se é o Rafael Cabral (validação mais flexível)
         nome_completo = nome_lider.lower()
         is_rafael = ('rafael' in nome_completo or 'cabral' in nome_completo or user_id == 6435800936)
+        
+        logger.info(f'🔍 Validação de usuário: nome="{nome_completo}", user_id={user_id}, is_rafael={is_rafael}')
+        print(f'🔍 Validação de usuário: nome="{nome_completo}", user_id={user_id}, is_rafael={is_rafael}')
         
         if not is_rafael:
             logger.info(f'🚫 Mensagem ignorada - não é do Rafael Cabral: {nome_lider} (ID: {user_id})')
@@ -74,12 +105,24 @@ async def telegram_webhook(request: Request):
                 logger.info(f'Total de alertas no sistema: {total_alertas}')
                 print(f'📊 Total de alertas no sistema: {total_alertas}')
                 
+                # Lista todos os alertas para debug
+                todos_alertas = db.query(Alerta).all()
+                logger.info(f'📋 Todos os alertas: {[(a.id, a.previsao, a.status) for a in todos_alertas]}')
+                print(f'📋 Todos os alertas: {[(a.id, a.previsao, a.status) for a in todos_alertas]}')
+                
                 # Envia mensagem informando que não há alertas pendentes
                 payload = {
                     'chat_id': user_id,
-                    'text': 'Não há alertas pendentes aguardando previsão no momento.'
+                    'text': f'Não há alertas pendentes aguardando previsão no momento.\n\nTotal de alertas no sistema: {total_alertas}'
                 }
-                requests.post(f'{TELEGRAM_API_URL}/sendMessage', data=payload)
+                resp_telegram = requests.post(f'{TELEGRAM_API_URL}/sendMessage', data=payload, timeout=10)
+                if resp_telegram.ok:
+                    logger.info(f'Mensagem de "sem alertas" enviada para {user_id}')
+                    print(f'📤 Mensagem de "sem alertas" enviada')
+                else:
+                    logger.error(f'Erro ao enviar mensagem: {resp_telegram.status_code} - {resp_telegram.text}')
+                    print(f'❌ Erro ao enviar mensagem: {resp_telegram.status_code}')
+                
                 return {"status": "no_pending", "msg": "Nenhum alerta pendente"}
             
             # Log de debug: mostra o alerta que será processado
@@ -87,6 +130,8 @@ async def telegram_webhook(request: Request):
             print(f'🎯 Alerta a ser processado: ID {alerta.id}')
             print(f'   Criado em: {alerta.criado_em}')
             print(f'   Problema: {alerta.problema[:100]}...')
+            print(f'   Status atual: {alerta.status}')
+            print(f'   Previsão atual: {alerta.previsao}')
             
             # Verifica quantos alertas pendentes existem no total
             total_pendentes = db.query(Alerta).filter(
@@ -107,7 +152,14 @@ async def telegram_webhook(request: Request):
                     'chat_id': user_id,
                     'text': f'Por favor, informe a previsão apenas no formato HH:MM (ex: 15:30).\n\nAlerta ID: {alerta.id}\nProblema: {alerta.problema[:100]}...\n\nAlertas na fila: {total_pendentes}'
                 }
-                requests.post(f'{TELEGRAM_API_URL}/sendMessage', data=payload)
+                resp_telegram = requests.post(f'{TELEGRAM_API_URL}/sendMessage', data=payload, timeout=10)
+                if resp_telegram.ok:
+                    logger.info(f'Instruções de formato enviadas para {user_id}')
+                    print(f'📤 Instruções de formato enviadas')
+                else:
+                    logger.error(f'Erro ao enviar instruções: {resp_telegram.status_code}')
+                    print(f'❌ Erro ao enviar instruções: {resp_telegram.status_code}')
+                
                 return {"status": "invalid_format", "msg": "Formato inválido"}
             
             # Montar datetime da previsão para o mesmo dia da resposta
@@ -170,17 +222,23 @@ async def telegram_webhook(request: Request):
                 logger.info(f'Confirmação enviada para {user_id}')
                 print(f'📤 Confirmação enviada')
             else:
-                logger.error(f'Erro ao enviar confirmação: {resp_telegram.status_code}')
-                print(f'❌ Erro ao enviar confirmação')
+                logger.error(f'Erro ao enviar confirmação: {resp_telegram.status_code} - {resp_telegram.text}')
+                print(f'❌ Erro ao enviar confirmação: {resp_telegram.status_code}')
             
             # Armazena também como resposta geral (opcional)
             if user_id and resposta and msg_utc:
-                add_response({
-                    'user_id': str(user_id),
-                    'pergunta': alerta.problema,
-                    'resposta': resposta,
-                    'timestamp': msg_utc.isoformat()
-                })
+                try:
+                    add_response({
+                        'user_id': str(user_id),
+                        'pergunta': alerta.problema,
+                        'resposta': resposta,
+                        'timestamp': msg_utc.isoformat()
+                    })
+                    logger.info(f'Resposta armazenada no histórico')
+                    print(f'💾 Resposta armazenada no histórico')
+                except Exception as resp_error:
+                    logger.error(f'Erro ao armazenar resposta: {resp_error}')
+                    print(f'❌ Erro ao armazenar resposta: {resp_error}')
             
             return {
                 "status": "success", 
@@ -191,7 +249,9 @@ async def telegram_webhook(request: Request):
             
         except Exception as e:
             logger.error(f'❌ Erro ao processar alerta: {str(e)}')
+            logger.error(f'❌ Traceback: {traceback.format_exc()}')
             print(f'❌ Erro ao processar alerta: {str(e)}')
+            print(f'❌ Traceback: {traceback.format_exc()}')
             
             # Envia mensagem de erro para o usuário
             try:
@@ -199,9 +259,10 @@ async def telegram_webhook(request: Request):
                     'chat_id': user_id,
                     'text': '❌ Erro interno ao processar sua resposta. Tente novamente.'
                 }
-                requests.post(f'{TELEGRAM_API_URL}/sendMessage', data=payload)
-            except:
-                pass
+                requests.post(f'{TELEGRAM_API_URL}/sendMessage', data=payload, timeout=10)
+            except Exception as send_error:
+                logger.error(f'Erro ao enviar mensagem de erro: {send_error}')
+                print(f'❌ Erro ao enviar mensagem de erro: {send_error}')
             
             return {"status": "error", "msg": str(e)}
         finally:
@@ -209,7 +270,9 @@ async def telegram_webhook(request: Request):
             
     except Exception as e:
         logger.error(f'❌ Erro geral no webhook: {str(e)}')
+        logger.error(f'❌ Traceback: {traceback.format_exc()}')
         print(f'❌ Erro geral no webhook: {str(e)}')
+        print(f'❌ Traceback: {traceback.format_exc()}')
         return {"status": "error", "msg": str(e)}
     finally:
         logger.info("🏁 FINALIZANDO PROCESSAMENTO DO WEBHOOK")
