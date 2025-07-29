@@ -98,15 +98,27 @@ def atualizar_status_operacao(alerta_id: int, body: dict):
         if novo_status == 'operando':
             tz_br = pytz.timezone('America/Sao_Paulo')
             alerta.horario_operando = datetime.now(tz_br)
-            # Se mudou para operando, vai para encerradas (tanto de escalada quanto de atrasada)
-            if alerta.status in ['escalada', 'atrasada']:
-                # Rastreia a origem do encerramento ANTES de mudar o status
-                if alerta.status == 'atrasada':
-                    alerta.origem_encerramento = 'atrasada'
-                elif alerta.status == 'escalada':
-                    alerta.origem_encerramento = 'escalada'
-                alerta.status = 'encerrada'
-                logger.info(f"Alerta {alerta_id} encerrado - origem: {alerta.origem_encerramento}")
+            
+            # Rastreia a origem do encerramento baseado na categoria atual
+            # A categorização será feita dinamicamente na listagem
+            if alerta.previsao:
+                # Verifica se estava em atrasadas (previsão excedida)
+                now = datetime.now(tz_br)
+                previsao_dt = alerta.previsao_datetime
+                if previsao_dt:
+                    if previsao_dt.tzinfo is None:
+                        previsao_dt = tz_br.localize(previsao_dt)
+                    else:
+                        previsao_dt = previsao_dt.astimezone(tz_br)
+                    
+                    if previsao_dt < now:
+                        # Estava em atrasadas
+                        alerta.origem_encerramento = 'atrasada'
+                        logger.info(f"Alerta {alerta_id} encerrado - origem: atrasada (previsão excedida)")
+                    else:
+                        # Estava em escaladas
+                        alerta.origem_encerramento = 'escalada'
+                        logger.info(f"Alerta {alerta_id} encerrado - origem: escalada (previsão não excedida)")
         
         db.commit()
         logger.info(f"Status do alerta {alerta_id} atualizado para {novo_status}")
@@ -135,42 +147,49 @@ def listar_alertas():
         for alerta in db.query(Alerta).order_by(Alerta.criado_em.desc()).all():
             logger.info(f"Processando alerta ID {alerta.id}: previsao={alerta.previsao}, status_operacao={alerta.status_operacao}")
             
-            # Modelo chave-valor: se não tem previsão, está pendente
+            # NOVA REGRA DE NEGÓCIO:
+            # Pendentes: Alertas sem previsão
+            # Escaladas: Alertas com previsão sem a previsão ter sido excedida
+            # Atrasadas: Tempo excedido da previsão e status não operando
+            # Encerradas: Tempo excedido ou não porém com status operando
+            
+            # 1. Pendentes: Alertas sem previsão
             if not alerta.previsao:
                 pendentes.append(alerta)
                 logger.info(f"Alerta {alerta.id} adicionado aos pendentes (sem previsão)")
                 continue
             
-            # CORREÇÃO: Garante que previsao_datetime tem timezone para comparação
+            # 2. Encerradas: Status operando (independente da previsão)
+            if alerta.status_operacao == 'operando':
+                encerradas.append(alerta)
+                logger.info(f"Alerta {alerta.id} adicionado aos encerrados (status operando)")
+                continue
+            
+            # 3. Para alertas com previsão e status não operando, verifica se a previsão foi excedida
             previsao_dt = alerta.previsao_datetime
             if previsao_dt:
-                # Se não tem timezone, assume que é já em Brasília (não UTC)
+                # Garante que previsao_datetime tem timezone para comparação
                 if previsao_dt.tzinfo is None:
                     tz_br = pytz.timezone('America/Sao_Paulo')
-                    # CORREÇÃO: Assume que já está em Brasília, não UTC
                     previsao_dt = tz_br.localize(previsao_dt)
                     logger.info(f"Alerta {alerta.id}: previsao_datetime sem timezone, assumido como Brasília: {previsao_dt}")
                 else:
-                    # Se já tem timezone, converte para Brasília
                     tz_br = pytz.timezone('America/Sao_Paulo')
                     previsao_dt = previsao_dt.astimezone(tz_br)
                     logger.info(f"Alerta {alerta.id}: previsao_datetime com timezone, convertido para Brasília: {previsao_dt}")
-            
-            # Se tem previsão, verifica as outras categorias baseado no status de operação
-            if alerta.status_operacao == 'operando':
-                # CORREÇÃO: Se status é operando, sempre vai para encerradas (independente da previsão)
-                encerradas.append(alerta)
-                logger.info(f"Alerta {alerta.id} adicionado aos encerrados (status operando)")
-            else:
-                # Status não operando
-                if previsao_dt and previsao_dt >= now:
-                    # Escaladas: Com previsão, dentro da previsão e status não operando
+                
+                # 4. Escaladas: Com previsão, dentro da previsão e status não operando
+                if previsao_dt >= now:
                     escaladas.append(alerta)
-                    logger.info(f"Alerta {alerta.id} adicionado aos escalados (com previsão: {alerta.previsao})")
+                    logger.info(f"Alerta {alerta.id} adicionado aos escalados (previsão não excedida: {alerta.previsao})")
                 else:
-                    # Atrasadas: Previsão excedida e status não operando
+                    # 5. Atrasadas: Previsão excedida e status não operando
                     atrasadas.append(alerta)
-                    logger.info(f"Alerta {alerta.id} adicionado aos atrasados (previsão excedida)")
+                    logger.info(f"Alerta {alerta.id} adicionado aos atrasados (previsão excedida: {alerta.previsao})")
+            else:
+                # Se tem previsão mas não tem previsao_datetime, vai para escaladas
+                escaladas.append(alerta)
+                logger.info(f"Alerta {alerta.id} adicionado aos escalados (sem previsao_datetime)")
         
         return {
             "pendentes": [
