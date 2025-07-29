@@ -28,8 +28,12 @@ def init_database():
     """Inicializa o banco de dados - recria todas as tabelas"""
     load_dotenv()
     
-    # Cria o engine com a configuração centralizada
-    engine = create_engine(DATABASE_URL, echo=False)
+    # Cria o engine com a configuração centralizada - corrigido para threading
+    engine = create_engine(
+        DATABASE_URL, 
+        echo=False,
+        connect_args={"check_same_thread": False}  # Permite uso em múltiplas threads
+    )
     
     # Recria todas as tabelas (dados zerados)
     Base.metadata.drop_all(bind=engine, checkfirst=True)
@@ -42,6 +46,9 @@ def init_database():
 # Use apenas em ambiente de desenvolvimento/teste!
 def force_recreate_alerta_table():
     load_dotenv()
-    engine = create_engine(DATABASE_URL)
+    engine = create_engine(
+        DATABASE_URL,
+        connect_args={"check_same_thread": False}
+    )
     Alerta.__table__.drop(engine, checkfirst=True)
     Base.metadata.create_all(bind=engine) 

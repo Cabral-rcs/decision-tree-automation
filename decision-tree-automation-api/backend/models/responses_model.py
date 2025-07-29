@@ -27,8 +27,12 @@ class EstadoUsuario(Base):
     user_id = Column(String, primary_key=True, index=True)
     aguardando_resposta = Column(Boolean, default=False)
 
-# Cria o engine com a configuração centralizada
-engine = create_engine(DATABASE_URL, pool_pre_ping=True)
+# Cria o engine com a configuração centralizada - corrigido para threading
+engine = create_engine(
+    DATABASE_URL, 
+    pool_pre_ping=True,
+    connect_args={"check_same_thread": False}  # Permite uso em múltiplas threads
+)
 
 # Cria a sessão
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)

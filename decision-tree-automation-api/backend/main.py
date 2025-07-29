@@ -11,6 +11,7 @@ import os
 import logging
 from backend.controllers.alerta_controller import router as alerta_router
 from backend.controllers.auto_alert_controller import router as auto_alert_router
+from sqlalchemy import inspect
 
 # Configuração de logging
 logging.basicConfig(level=logging.INFO)
@@ -258,7 +259,7 @@ def database_status():
                     "exists": estado_usuario_exists
                 }
             },
-            "database_url": "sqlite:///:memory:" if "memory" in os.environ.get("DATABASE_URL", "") else "configured"
+            "database_url": "sqlite:///temp_database.db"
         }
         
     except Exception as e:
@@ -266,6 +267,56 @@ def database_status():
             "status": "error",
             "error": str(e),
             "message": "Erro ao verificar status do banco de dados"
+        }
+
+@app.post("/database-recreate")
+def recreate_database():
+    """Endpoint para forçar a recriação das tabelas do banco de dados"""
+    try:
+        from backend.models.alerta_model import init_database
+        from backend.models.responses_model import init_db
+        from backend.models.auto_alert_config_model import Base as AutoAlertConfigBase
+        from sqlalchemy import create_engine
+        from backend.config import DATABASE_URL
+        
+        # Cria o engine e recria todas as tabelas
+        engine = create_engine(
+            DATABASE_URL, 
+            echo=False,
+            connect_args={"check_same_thread": False}
+        )
+        
+        # Recria todas as tabelas (dados zerados)
+        from backend.models.alerta_model import Base as AlertaBase
+        AlertaBase.metadata.drop_all(bind=engine, checkfirst=True)
+        AlertaBase.metadata.create_all(bind=engine)
+        
+        from backend.models.responses_model import Base as ResponseBase
+        ResponseBase.metadata.drop_all(bind=engine, checkfirst=True)
+        ResponseBase.metadata.create_all(bind=engine)
+        
+        AutoAlertConfigBase.metadata.drop_all(bind=engine, checkfirst=True)
+        AutoAlertConfigBase.metadata.create_all(bind=engine)
+        
+        # Força a inicialização das tabelas
+        init_db()
+        
+        # Verifica se as tabelas foram criadas
+        inspector = inspect(engine)
+        tables = inspector.get_table_names()
+        
+        return {
+            "status": "success",
+            "message": "Banco de dados recriado com sucesso",
+            "tables_created": tables,
+            "timestamp": __import__('datetime').datetime.now().isoformat()
+        }
+        
+    except Exception as e:
+        return {
+            "status": "error",
+            "error": str(e),
+            "message": "Erro ao recriar banco de dados"
         }
 
 @app.get("/force-refresh")
@@ -426,7 +477,11 @@ def inicializar_sistema():
         from backend.config import DATABASE_URL
         
         # Cria o engine e recria todas as tabelas
-        engine = create_engine(DATABASE_URL)
+        engine = create_engine(
+            DATABASE_URL, 
+            echo=False,
+            connect_args={"check_same_thread": False}  # Permite uso em múltiplas threads
+        )
         
         # Recria todas as tabelas (dados zerados)
         from backend.models.alerta_model import Base as AlertaBase
@@ -442,6 +497,11 @@ def inicializar_sistema():
         
         # Força a inicialização das tabelas
         init_db()
+        
+        # Verifica se as tabelas foram criadas
+        inspector = inspect(engine)
+        tables = inspector.get_table_names()
+        logger.info(f"Tabelas criadas: {tables}")
         
         logger.info("✅ Banco de dados inicializado (dados zerados)")
         print("✅ Banco de dados inicializado (dados zerados)")
