@@ -218,13 +218,7 @@ async def telegram_webhook(request: Request):
             # Confirmação para o líder
             mensagem_confirmacao = f'✅ Previsão registrada: {resposta}\n\n'
             mensagem_confirmacao += f'Alerta ID: {alerta.id}\n'
-            mensagem_confirmacao += f'Problema: {alerta.problema[:100]}...\n\n'
-            mensagem_confirmacao += f'O alerta foi movido para "Escaladas" e será monitorado até {resposta}.\n\n'
-            
-            if alertas_restantes > 0:
-                mensagem_confirmacao += f'⚠️  Ainda há {alertas_restantes} alerta(s) pendente(s) na fila.'
-            else:
-                mensagem_confirmacao += f'✅ Todos os alertas foram processados!'
+            mensagem_confirmacao += f'Problema: {alerta.problema[:100]}...'
             
             payload = {
                 'chat_id': user_id,
