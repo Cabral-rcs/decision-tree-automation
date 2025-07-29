@@ -242,7 +242,6 @@ async def telegram_webhook(request: Request):
             if user_id and resposta and msg_utc:
                 try:
                     # Converte a string ISO para objeto datetime
-                    from datetime import datetime
                     if isinstance(msg_utc, str):
                         # Se for string, converte para datetime
                         timestamp_dt = datetime.fromisoformat(msg_utc.replace('Z', '+00:00'))

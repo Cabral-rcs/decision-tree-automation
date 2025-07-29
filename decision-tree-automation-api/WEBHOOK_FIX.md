@@ -37,6 +37,11 @@
 - ✅ Correção de erro "can't compare offset-naive and offset-aware datetimes"
 - ✅ `test_timezone_fix.py` - Script de teste específico para timezone
 
+### 7. **Correção de Escopo de Variável** ⭐ **FINAL**
+- ✅ Remoção de import duplicado de `datetime` que causava erro de escopo
+- ✅ Correção de erro "cannot access local variable 'datetime' where it is not associated with a value"
+- ✅ `test_webhook_quick.py` - Script de teste rápido após correção
+
 ## Problemas Corrigidos
 
 ### ❌ **Erro de Timestamp**
@@ -51,6 +56,12 @@ ERROR: SQLite DateTime type only accepts Python datetime and date objects as inp
 ERROR: can't compare offset-naive and offset-aware datetimes
 ```
 **✅ Solução**: Garantia de timezone em todas as comparações de datetime
+
+### ❌ **Erro de Escopo de Variável** ⭐ **FINAL**
+```
+ERROR: cannot access local variable 'datetime' where it is not associated with a value
+```
+**✅ Solução**: Remoção de import duplicado de `datetime` dentro do bloco try
 
 ## Como Testar
 
@@ -90,7 +101,13 @@ cd decision-tree-automation-api
 python test_timezone_fix.py
 ```
 
-### 6. **Teste Manual**
+### 6. **Teste Rápido** ⭐ **FINAL**
+```bash
+cd decision-tree-automation-api
+python test_webhook_quick.py
+```
+
+### 7. **Teste Manual**
 1. Envie uma mensagem para o bot no Telegram
 2. Verifique os logs do servidor
 3. Confirme se o alerta foi atualizado
@@ -170,22 +187,11 @@ INFO: Alerta 1 adicionado aos escalados (com previsão: 12:57)
 ```
 **✅ Solução**: Conversão automática de string ISO para datetime
 
-## Variáveis de Ambiente
-
-```bash
-TELEGRAM_BOT_TOKEN=seu_token_aqui
-CHAT_IDS=6435800936
-RENDER_EXTERNAL_URL=https://decision-tree-automation-1.onrender.com
+#### 7. **Erro de escopo de variável** ⭐ **CORRIGIDO**
 ```
-
-## Fluxo de Correção
-
-1. **Identificar problema**: Use `/webhook-debug`
-2. **Reconfigurar**: Use `/telegram-force-setup`
-3. **Testar**: Use `/telegram-test-webhook`
-4. **Testar timezone**: Use `python test_timezone_fix.py`
-5. **Verificar**: Envie mensagem real no Telegram
-6. **Monitorar**: Acompanhe os logs
+❌ Erro geral no webhook: cannot access local variable 'datetime' where it is not associated with a value
+```
+**✅ Solução**: Remoção de import duplicado de `datetime` dentro do bloco try
 
 ## Status de Sucesso
 
@@ -198,13 +204,15 @@ RENDER_EXTERNAL_URL=https://decision-tree-automation-1.onrender.com
 - ✅ **Timezone corrigido** ⭐
 - ✅ **Timestamp corrigido** ⭐
 - ✅ **Listagem funcionando** ⭐
+- ✅ **Escopo de variável corrigido** ⭐ **FINAL**
 
 ## Próximos Passos
 
-1. Execute o script de teste: `python test_webhook.py`
-2. Execute o teste de timezone: `python test_timezone_fix.py`
-3. Force a reconfiguração: `/telegram-force-setup`
-4. Envie uma mensagem de teste no Telegram
-5. Verifique se o alerta foi atualizado corretamente
-6. Confirme que aparece na categoria "Escaladas"
-7. Monitore os logs para confirmar funcionamento 
+1. Execute o teste rápido: `python test_webhook_quick.py`
+2. Execute o script de teste completo: `python test_webhook.py`
+3. Execute o teste de timezone: `python test_timezone_fix.py`
+4. Force a reconfiguração: `/telegram-force-setup`
+5. Envie uma mensagem de teste no Telegram
+6. Verifique se o alerta foi atualizado corretamente
+7. Confirme que aparece na categoria "Escaladas"
+8. Monitore os logs para confirmar funcionamento
