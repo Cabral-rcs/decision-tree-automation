@@ -17,5 +17,7 @@ async def receive_response(request: Request):
 def list_responses():
     return get_all_responses()
 
-# Rota para receber webhooks do Telegram (exemplo)
-api_router.post('/webhook/telegram')(telegram_webhook.telegram_webhook) 
+# Rota para receber webhooks do Telegram
+@api_router.post('/telegram-webhook')
+async def telegram_webhook_route(request: Request):
+    return await telegram_webhook.telegram_webhook(request) 

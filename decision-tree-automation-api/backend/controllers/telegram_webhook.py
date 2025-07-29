@@ -42,10 +42,17 @@ async def telegram_webhook(request: Request):
         logger.info(f'Processando mensagem de {nome_lider} (ID: {user_id}): {resposta}')
         print(f'📱 Processando: {nome_lider} ({user_id}) -> {resposta}')
         
-        # Verifica se é o Rafael Cabral
-        if 'Rafael' not in nome_lider and 'Cabral' not in nome_lider:
-            logger.info(f'Mensagem ignorada - não é do Rafael Cabral: {nome_lider}')
+        # Verifica se é o Rafael Cabral (validação mais flexível)
+        nome_completo = nome_lider.lower()
+        is_rafael = ('rafael' in nome_completo or 'cabral' in nome_completo or user_id == 6435800936)
+        
+        if not is_rafael:
+            logger.info(f'Mensagem ignorada - não é do Rafael Cabral: {nome_lider} (ID: {user_id})')
+            print(f'🚫 Mensagem ignorada - não é do Rafael Cabral: {nome_lider} (ID: {user_id})')
             return {"status": "ignored", "msg": "Não é do líder autorizado"}
+        
+        logger.info(f'✅ Usuário autorizado: {nome_lider} (ID: {user_id})')
+        print(f'✅ Usuário autorizado: {nome_lider} (ID: {user_id})')
         
         db = SessionLocal()
         try:
