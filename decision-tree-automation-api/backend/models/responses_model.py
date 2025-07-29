@@ -65,24 +65,6 @@ def get_responses(user_id: str = None, limit: int = 100):
     finally:
         db.close()
 
-def get_all_responses():
-    """Busca todas as respostas do banco"""
-    db = SessionLocal()
-    try:
-        responses = db.query(Response).order_by(Response.timestamp.desc()).all()
-        return [
-            {
-                "id": response.id,
-                "user_id": response.user_id,
-                "pergunta": response.pergunta,
-                "resposta": response.resposta,
-                "timestamp": response.timestamp.isoformat() if response.timestamp else None
-            }
-            for response in responses
-        ]
-    finally:
-        db.close()
-
 def set_aguardando_resposta(user_id: str):
     """Marca que o usuário está aguardando resposta"""
     # Implementação simplificada - sempre retorna True
